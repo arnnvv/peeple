@@ -51,38 +51,44 @@ export default (): JSX.Element => {
         if (res.ok) {
           const data = await res.json();
           setUserr(data.user);
-          if (data.user && data.user.location) {
+          if (data.user) {
             try {
               const locationData = JSON.parse(data.user.location);
               const { latitude, longitude } = locationData.coords;
-              cityName = await getCityFromCoordinates(latitude, longitude);
-            } catch (error) {
-              console.error("Error parsing location data:", error);
+              //cityName = await getCityFromCoordinates(latitude, longitude);
+            } catch (e) {
+              console.error("Error location", e);
             }
           }
         } else {
-          console.log("Error fetching user data");
+          console.error("DB dosen't return User");
         }
       } else {
         const email = user?.emailAddresses[0].emailAddress;
+        console.log(email, "says ih");
         const res = await fetch("http://10.61.39.212:3000/user-form-email", {
           method: "POST",
-          body: JSON.stringify({ email }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, lund: "I'm lund" }),
         });
         if (res.ok) {
+          console.log("Res is ok in Android");
           const data = await res.json();
+          console.log(data);
           setUserr(data.user);
-          if (data.user && data.user.location) {
+          if (data.user) {
             try {
               const locationData = JSON.parse(data.user.location);
               const { latitude, longitude } = locationData.coords;
-              cityName = await getCityFromCoordinates(latitude, longitude);
-            } catch (error) {
-              console.error("Error parsing location data:", error);
+              //cityName = await getCityFromCoordinates(latitude, longitude);
+            } catch (e) {
+              console.error("Error location", e);
             }
           }
         } else {
-          console.log("Error fetching user data");
+          console.error("DB dosen't return User");
         }
       }
     })();
