@@ -87,3 +87,12 @@ export const userpreferences = createTable("userpreferences", {
   relationshiptypepreference: jsonb("relationshiptypepreference"),
   maxdistance: integer("maxdistance"),
 });
+
+
+export const profileImages = createTable("profileImages", {
+  id: serial("id").primaryKey(),
+  email: varchar("email").references(() => users.email).notNull(),
+  url: varchar("url", { length: 255 }).notNull(),
+  imageName: varchar("name", { length: 255 }).notNull(),
+  imageNo: integer("imageNo").notNull(),
+});

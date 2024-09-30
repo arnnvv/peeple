@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { createTransport, SentMessageInfo } from "nodemailer";
 import jwt from "jsonwebtoken";
 import { v4 } from "uuid";
+import chalk from 'chalk';  // Import chalk for colored logs
 
 const app = e();
 const port: number = 3000;
@@ -298,6 +299,90 @@ app.post("/create-user", async (req: Request, res: Response) => {
   } catch (error) {
     logWithColor(`Error creating/updating user: ${error}`, "\x1b[31m"); // Red
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
+// Define your route with correct typings
+app.get('/profile-images/:email', async (req: Request, res: Response) => {
+  const { email } = req.params;
+
+  // Log the incoming request email
+  console.log(chalk.blue(`Received request for profile images with email: ${email}`));
+
+  try {
+    const images = await db
+      .select()
+      .from(profileImages)
+      .where(eq(profileImages.email, email));
+
+    if (images.length === 0) {
+      console.log(chalk.yellow(`No images found for user with email: ${email}`));
+      res.status(404).json({ message: 'No images found for this user' });
+    }
+
+    // Log the images being sent back
+    console.log(chalk.green(`Found images for email: ${email}. Sending response:`));
+    console.log(chalk.green(JSON.stringify(images, null, 2)));
+
+    res.json(images);
+  } catch (error) {
+    console.error(chalk.red('Error fetching profile images:', error));
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 
+
+app.post('/profile-images', async (req: Request, res: Response) => {
+  const { email, url, imageName, imageNo } = req.body;
+
+  // Log incoming request body
+  console.log(chalk.blue('Received POST request for /profile-images with the following data:'));
+  console.log(chalk.blue(JSON.stringify(req.body, null, 2)));
+
+  // Field validation logging
+  if (!email || !url || !imageName || !imageNo) {
+    console.log(chalk.yellow('Missing fields in request body:'));
+    if (!email) console.log(chalk.yellow('Missing email'));
+    if (!url) console.log(chalk.yellow('Missing URL'));
+    if (!imageName) console.log(chalk.yellow('Missing imageName'));
+    if (!imageNo) console.log(chalk.yellow('Missing imageNo'));
+
+    res.status(400).json({ error: 'All fields are required' });
+  }
+
+  try {
+    console.log(chalk.green('Inserting new image into the database...'));
+
+    // Insert new image record
+    const newImage = await db.insert(profileImages).values({
+      email,
+      url,
+      imageName,
+      imageNo,
+    });
+
+    console.log(chalk.green('Image inserted successfully into the database'));
+    console.log(chalk.green('Inserted image details:'));
+    console.log(chalk.green(JSON.stringify(newImage, null, 2)));
+
+    // Send success response
+    res.status(201).json({ message: 'Image uploaded successfully', newImage });
+
+    // Log the success response
+    console.log(chalk.green('Sent 201 response to client: Image uploaded successfully'));
+
+  } catch (error) {
+    console.error(chalk.red('Error occurred while inserting image into the database:'));
+    console.error(chalk.red(error));
+
+    // Send error response
+    res.status(500).json({ error: 'Failed to upload image' });
+
+    // Log the error response
+    console.log(chalk.red('Sent 500 response to client: Failed to upload image'));
   }
 });
 

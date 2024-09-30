@@ -2,7 +2,7 @@ export const userExists = async (
   email: string,
 ): Promise<boolean | undefined> => {
   try {
-    const response = await fetch(`http://10.61.39.212:3000/check-email`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_API}/check-email`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

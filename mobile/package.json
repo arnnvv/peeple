@@ -16,6 +16,8 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.658.1",
+    "@aws-sdk/s3-request-presigner": "^3.658.1",
     "@babel/runtime": "^7.25.6",
     "@clerk/clerk-expo": "^2.2.17",
     "@expo-google-fonts/pacifico": "^0.2.3",
@@ -25,6 +27,7 @@
     "@react-native-masked-view/masked-view": "^0.3.1",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/stack": "^6.4.1",
+    "chalk": "^5.3.0",
     "expo": "~51.0.28",
     "expo-blur": "~13.0.2",
     "expo-camera": "~15.0.16",

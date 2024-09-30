@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,77 @@ import {
   ScrollView,
 } from "react-native";
 import { MediaTypeOptions, launchImageLibraryAsync } from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAtom } from "jotai";
 import { bioAtom, nameAtom } from "@/lib/atom";
 import { router } from "expo-router";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+// Colored console logging function
+const logWithColor = (message: string, color: string = "\x1b[37m") => {
+  console.log(`${color}%s\x1b[0m`, message);
+};
+
+const s3 = new S3Client({
+  region: "ap-south-1",
+  credentials: {
+    accessKeyId: "",
+    secretAccessKey: "",
+  },
+});
+
+const uploadImageToS3 = async (username: string, imageUri: string, imageNumber: number) => {
+  const filename = `${username}-${imageNumber}.jpeg`;
+  logWithColor(`Uploading image: ${filename}`, "\x1b[34m"); // Blue
+
+  async function getObjectURL(key: any) {
+    const command = new GetObjectCommand({
+      Bucket: "peeple",
+      Key: key
+    });
+
+    const url = await getSignedUrl(s3, command);
+    return url;
+  }
+
+
+  const command = new PutObjectCommand({
+    Bucket: "peeple",
+    Key: `uploads/${filename}`,
+    ContentType: "image/jpeg",
+  });
+
+  // Generate a signed URL for uploading
+  const uploadUrl = await getSignedUrl(s3, command);
+  logWithColor(`Signed URL for uploading: ${uploadUrl}`, "\x1b[35m"); // Magenta
+
+  // Fetch image as blob
+  const response = await fetch(imageUri);
+  const blob = await response.blob();
+
+  // Make the PUT request to upload the image using the signed URL
+  const uploadResponse = await fetch(uploadUrl, {
+    method: "PUT",
+    body: blob,
+    headers: {
+      "Content-Type": "image/jpeg",
+    },
+  });
+
+  if (uploadResponse.ok) {
+    logWithColor(`Image uploaded successfully: ${filename}`, "\x1b[32m"); // Green
+  } else {
+    logWithColor(`Failed to upload image: ${filename}`, "\x1b[31m"); // Red
+    throw new Error("Image upload failed");
+  }
+
+  // Once the upload is successful, return the S3 file URL for viewing
+  const url = await getObjectURL(`uploads/${filename}`);
+  logWithColor(`Uploaded image URL: ${url}`, "\x1b[35m"); // Magenta
+  return { filename, url };
+};
+
 
 export default (): JSX.Element => {
   const [name, setName] = useAtom<string>(nameAtom);
@@ -23,8 +91,34 @@ export default (): JSX.Element => {
   const [bioError, setBioError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const fetchUserEmail = async () => {
+      const token = await AsyncStorage.getItem("token");
+      logWithColor(`Token: ${token}`, "\x1b[33m"); // Yellow
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/verify-token`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        logWithColor(`User email: ${data.email}`, "\x1b[32m"); // Green
+      } else {
+        logWithColor(`Error: ${data.error}`, "\x1b[31m"); // Red
+      }
+    };
+
+    fetchUserEmail();
+  }, []);
+
   const handleImageUpload = async () => {
-    if (images.length >= 4) return; // Max 4 images
+    logWithColor("Opening image picker", "\x1b[36m"); // Cyan
+    if (images.length >= 4) {
+      logWithColor("Max 4 images reached", "\x1b[33m"); // Yellow
+      return;
+    }
 
     const result = await launchImageLibraryAsync({
       mediaTypes: MediaTypeOptions.Images,
@@ -33,47 +127,75 @@ export default (): JSX.Element => {
     });
 
     if (!result.canceled && result.assets) {
-      setImages([...images, result.assets[0].uri]);
+      const newImageUri = result.assets[0].uri;
+      logWithColor(`Image URI: ${newImageUri}`, "\x1b[34m"); // Blue
+      setImages([...images, newImageUri]);
     }
   };
 
   const handleDeleteImage = (index: number) => {
-    setImages(images.filter((_: string, i: number): boolean => i !== index));
+    logWithColor(`Deleting image at index: ${index}`, "\x1b[31m"); // Red
+    setImages(images.filter((_, i) => i !== index));
   };
 
   const validateFields = (): boolean => {
     let valid = true;
 
-    // Name validation
+    logWithColor("Validating fields...", "\x1b[36m"); // Cyan
+
     if (!name || name.trim() === "") {
       setNameError("Name is required.");
+      logWithColor("Name validation failed", "\x1b[31m"); // Red
       valid = false;
     } else {
       setNameError(null);
     }
 
-    // Bio validation (must be at least 20 characters)
     if (!bio || bio.trim().length < 20) {
       setBioError("Bio must be at least 20 characters.");
+      logWithColor("Bio validation failed", "\x1b[31m"); // Red
       valid = false;
     } else {
       setBioError(null);
     }
 
-    // Image validation (must upload at least 1 image)
     if (images.length === 0) {
       setImageError("Please upload at least one image.");
+      logWithColor("Image validation failed", "\x1b[31m"); // Red
       valid = false;
     } else {
       setImageError(null);
     }
 
+    logWithColor(`Validation result: ${valid}`, "\x1b[36m"); // Cyan
     return valid;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateFields()) {
+      logWithColor("Validation passed. Proceeding with submission.", "\x1b[32m"); // Green
+      for (let i = 0; i < images.length; i++) {
+        const { filename, url } = await uploadImageToS3(name, images[i], i + 1);
+
+        logWithColor(`Posting image ${filename} to server`, "\x1b[34m"); // Blue
+
+        await fetch(`${process.env.EXPO_PUBLIC_API}/profile-images`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: "user@example.com", // Replace with actual user email
+            url,
+            imageName: filename,
+            imageNo: i + 1,
+          }),
+        });
+      }
+
       router.replace("/(onboarding)/gender");
+    } else {
+      logWithColor("Validation failed. Not submitting.", "\x1b[31m"); // Red
     }
   };
 
@@ -103,24 +225,19 @@ export default (): JSX.Element => {
 
       {/* Image Upload Section */}
       <View style={styles.imagesContainer}>
-        {images.map(
-          (image: string, index: number): JSX.Element => (
-            <View key={index} style={styles.imageWrapper}>
-              <Image source={{ uri: image }} style={styles.uploadedImage} />
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDeleteImage(index)}
-              >
-                <Text style={styles.deleteText}>X</Text>
-              </TouchableOpacity>
-            </View>
-          ),
-        )}
+        {images.map((image: string, index: number): JSX.Element => (
+          <View key={index} style={styles.imageWrapper}>
+            <Image source={{ uri: image }} style={styles.uploadedImage} />
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteImage(index)}
+            >
+              <Text style={styles.deleteText}>X</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
         {images.length < 4 && (
-          <TouchableOpacity
-            style={styles.imageUpload}
-            onPress={handleImageUpload}
-          >
+          <TouchableOpacity style={styles.imageUpload} onPress={handleImageUpload}>
             <Text style={styles.uploadText}>Upload Image</Text>
           </TouchableOpacity>
         )}
