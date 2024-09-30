@@ -214,9 +214,20 @@ app.post("/get-user-from-token", async (req: Request, res: Response) => {
 });
 
 app.post("/user-form-email", async (req: Request, res: Response) => {
+  console.log("Android req Received");
   const { email } = req.body;
-  const user = (await db.select().from(users).where(eq(users.email, email)))[0];
-  res.json({ user });
+  console.log(req.body, "HI");
+  try {
+    console.log("try");
+    const user = (
+      await db.select().from(users).where(eq(users.email, email))
+    )[0];
+    console.log(user);
+    res.json({ user });
+  } catch (e) {
+    logWithColor(`${e}`, "\x1b[31m"); // Red
+    res.status(401).json({ error: e });
+  }
 });
 // Create or update user
 app.post("/create-user", async (req: Request, res: Response) => {
