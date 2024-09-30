@@ -16,7 +16,7 @@ export const createTable = pgTableCreator(
 export const users = createTable("users", {
   id: varchar("id").primaryKey(),
   name: varchar("name"),
-  email: varchar("email", { length: 255 }).unique().notNull(),
+  email: varchar("email").unique().notNull(),
   location: varchar("location", { length: 255 }),
   gender: varchar("gender"),
   relationshiptype: varchar("relationshiptype"),
@@ -37,53 +37,49 @@ export type User = typeof users.$inferSelect;
 
 export const pictures = createTable("pictures", {
   id: serial("id").primaryKey(),
-  userid: varchar("userid", { length: 21 })
-    .references(() => users.id)
+  email: varchar("email")
+    .references(() => users.email)
     .notNull(),
   url: varchar("url", { length: 255 }).notNull(),
-  isprimary: boolean("isprimary").default(false),
-  uploadedat: timestamp("uploadedat").defaultNow().notNull(),
 });
 
 export const likes = createTable("likes", {
   id: serial("id").primaryKey(),
-  likerid: varchar("likerid", { length: 21 })
-    .references(() => users.id)
+  likerEmail: varchar("likerEmail")
+    .references(() => users.email)
     .notNull(),
-  likedid: varchar("likedid", { length: 21 })
-    .references(() => users.id)
+  likedEmail: varchar("likedEmail")
+    .references(() => users.email)
     .notNull(),
-  createdat: timestamp("createdat").defaultNow().notNull(),
 });
 
 export const matches = createTable("matches", {
   id: serial("id").primaryKey(),
-  user1id: varchar("user1id", { length: 21 })
+  user1id: varchar("user1id")
     .references(() => users.id)
     .notNull(),
-  user2id: varchar("user2id", { length: 21 })
+  user2id: varchar("user2id")
     .references(() => users.id)
     .notNull(),
   matchedat: timestamp("matchedat").defaultNow().notNull(),
-  isactive: boolean("isactive").default(true),
 });
 
 export const messages = createTable("messages", {
   id: serial("id").primaryKey(),
-  matchid: integer("matchid")
-    .references(() => matches.id)
+  senderEmail: varchar("senderEmail")
+    .references(() => users.email)
     .notNull(),
-  senderid: varchar("senderid", { length: 21 })
-    .references(() => users.id)
+  receiverEmail: varchar("receiverEmail")
+    .references(() => users.email)
     .notNull(),
   content: text("content").notNull(),
-  sentat: timestamp("sentat").defaultNow().notNull(),
-  isread: boolean("isread").default(false),
+  sentAt: timestamp("sentat").defaultNow().notNull(),
+  isRead: boolean("isread").default(false),
 });
 
 export const userpreferences = createTable("userpreferences", {
   id: serial("id").primaryKey(),
-  userid: varchar("userid", { length: 21 })
+  userid: varchar("userid")
     .references(() => users.id)
     .notNull(),
   agerange: jsonb("agerange"),
