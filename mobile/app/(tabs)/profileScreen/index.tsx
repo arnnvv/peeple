@@ -7,6 +7,7 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
+  Platform,
 } from "react-native";
 import { Edit2, Camera, Settings, ChevronLeft } from "lucide-react-native";
 import {
@@ -18,6 +19,7 @@ import { useLogout } from "@/lib/useLogout";
 import { User } from "./../../../../api/lib/db/schema";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getCityFromCoordinates } from "@/lib/cutyName";
+import { useUser } from "@clerk/clerk-expo";
 
 export default (): JSX.Element => {
   const [editing, setEditing] = useState(false);
@@ -27,37 +29,64 @@ export default (): JSX.Element => {
     "/api/placeholder/80/80?text=3",
     "/api/placeholder/80/80?text=4",
   ]);
-  const [user, setUser] = useState<User>();
+  const [userr, setUserr] = useState<User>();
   const handleLogout = useLogout();
+  const { user } = useUser();
   let cityName;
 
   useEffect(() => {
     (async () => {
-      const token = await AsyncStorage.getItem("token");
-      const res = await fetch("http://10.61.39.212:3000/get-user-from-token", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      if (Platform.OS === "ios") {
+        const token = await AsyncStorage.getItem("token");
+        const res = await fetch(
+          "http://10.61.39.212:3000/get-user-from-token",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
 
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-        if (data.user && data.user.location) {
-          try {
-            const locationData = JSON.parse(data.user.location);
-            const { latitude, longitude } = locationData.coords;
-            cityName = await getCityFromCoordinates(latitude, longitude);
-          } catch (error) {
-            console.error("Error parsing location data:", error);
+        if (res.ok) {
+          const data = await res.json();
+          setUserr(data.user);
+          if (data.user && data.user.location) {
+            try {
+              const locationData = JSON.parse(data.user.location);
+              const { latitude, longitude } = locationData.coords;
+              cityName = await getCityFromCoordinates(latitude, longitude);
+            } catch (error) {
+              console.error("Error parsing location data:", error);
+            }
           }
+        } else {
+          console.log("Error fetching user data");
         }
       } else {
-        console.log("Error fetching user data");
+        const email = user?.emailAddresses[0].emailAddress;
+        const res = await fetch("http://10.61.39.212:3000/user-form-email", {
+          method: "POST",
+          body: JSON.stringify({ email }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUserr(data.user);
+          if (data.user && data.user.location) {
+            try {
+              const locationData = JSON.parse(data.user.location);
+              const { latitude, longitude } = locationData.coords;
+              cityName = await getCityFromCoordinates(latitude, longitude);
+            } catch (error) {
+              console.error("Error parsing location data:", error);
+            }
+          }
+        } else {
+          console.log("Error fetching user data");
+        }
       }
     })();
-  }, []);
+  }, [user]);
 
   const openGallery = async (index: number): Promise<void> => {
     const result: ImagePickerResult = await launchImageLibraryAsync({
@@ -87,7 +116,7 @@ export default (): JSX.Element => {
       </View>
       <View style={styles.nameActions}>
         <Text style={styles.name}>
-          {user?.name}, {Number(new Date().getFullYear()) - (user?.year || 0)}
+          {userr?.name}, {Number(new Date().getFullYear()) - (userr?.year || 0)}
         </Text>
         <Text style={styles.location}>{cityName}</Text>
         <View style={styles.actions}>
@@ -133,19 +162,23 @@ export default (): JSX.Element => {
             style={styles.textArea}
           />
         ) : (
-          <Text style={styles.bio}>{user?.bio}</Text>
+          <Text style={styles.bio}>{userr?.bio}</Text>
         )}
       </View>
       <View style={styles.quickInfoSection}>
         <Text style={styles.quickInfoTitle}>Quick Info</Text>
         <View style={styles.quickInfoGrid}>
           {[
-            { icon: "👔", label: "Work", value: user?.occupationArea },
-            { icon: "🎓", label: "Education", value: user?.occupationField },
-            { icon: "🍷", label: "Drinks", value: user?.drink },
-            { icon: "🚬", label: "Smokes", value: user?.smoke },
-            { icon: "🙏", label: "Religion", value: user?.religion },
-            { icon: "💑", label: "Looking for", value: user?.relationshiptype },
+            { icon: "👔", label: "Work", value: userr?.occupationArea },
+            { icon: "🎓", label: "Education", value: userr?.occupationField },
+            { icon: "🍷", label: "Drinks", value: userr?.drink },
+            { icon: "🚬", label: "Smokes", value: userr?.smoke },
+            { icon: "🙏", label: "Religion", value: userr?.religion },
+            {
+              icon: "💑",
+              label: "Looking for",
+              value: userr?.relationshiptype,
+            },
           ].map(
             ({
               icon,

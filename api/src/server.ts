@@ -213,6 +213,11 @@ app.post("/get-user-from-token", async (req: Request, res: Response) => {
   }
 });
 
+app.post("/user-form-email", async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const user = (await db.select().from(users).where(eq(users.email, email)))[0];
+  res.json({ user });
+});
 // Create or update user
 app.post("/create-user", async (req: Request, res: Response) => {
   logWithColor("POST /create-user - Request received", "\x1b[36m"); // Cyan
