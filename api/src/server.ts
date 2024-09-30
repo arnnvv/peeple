@@ -1,7 +1,7 @@
 import e, { Request, Response } from "express";
 import cors from "cors";
 import { db } from "../lib/db";
-import { users } from "../lib/db/schema";
+import { pictures, users } from "../lib/db/schema";
 import { eq } from "drizzle-orm";
 import { createTransport, SentMessageInfo } from "nodemailer";
 import jwt from "jsonwebtoken";
@@ -206,7 +206,17 @@ app.post("/get-user-from-token", async (req: Request, res: Response) => {
     const userr = await db.select().from(users).where(eq(users.email, email));
     const user = userr[0];
     console.log(user);
-    res.json({ user });
+    console.log("before image call");
+    const imagess = await db
+      .select()
+      .from(pictures)
+      .where(eq(pictures.email, email));
+    console.log("after Image call");
+    const images = imagess.map(
+      (i: { id: number; email: string; url: string }): string => i.url,
+    );
+    console.log(images);
+    res.json({ user, images });
   } catch (e) {
     logWithColor(`Token verification failed: ${e}`, "\x1b[31m"); // Red
     res.status(401).json({ error: "Invalid token" });
@@ -222,8 +232,12 @@ app.post("/user-form-email", async (req: Request, res: Response) => {
     const user = (
       await db.select().from(users).where(eq(users.email, email))
     )[0];
-    console.log(user);
-    res.json({ user });
+    const images = await db
+      .select()
+      .from(pictures)
+      .where(eq(pictures.email, email));
+    console.log(user, images);
+    res.json({ user, images });
   } catch (e) {
     logWithColor(`${e}`, "\x1b[31m"); // Red
     res.status(401).json({ error: e });

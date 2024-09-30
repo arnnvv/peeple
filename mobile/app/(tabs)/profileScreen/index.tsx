@@ -23,13 +23,8 @@ import { useUser } from "@clerk/clerk-expo";
 
 export default (): JSX.Element => {
   const [editing, setEditing] = useState(false);
-  const [photos, setPhotos] = useState([
-    "/api/placeholder/80/80?text=1",
-    "/api/placeholder/80/80?text=2",
-    "/api/placeholder/80/80?text=3",
-    "/api/placeholder/80/80?text=4",
-  ]);
   const [userr, setUserr] = useState<User>();
+  const [photos, setPhotos] = useState([]);
   const handleLogout = useLogout();
   const { user } = useUser();
   let cityName;
@@ -49,12 +44,15 @@ export default (): JSX.Element => {
         );
 
         if (res.ok) {
+          console.log("res is ok");
           const data = await res.json();
+          console.log(data.images);
           setUserr(data.user);
+          setPhotos(data.images);
           if (data.user) {
             try {
-              const locationData = JSON.parse(data.user.location);
-              const { latitude, longitude } = locationData.coords;
+              //const locationData = JSON.parse(data.user.location);
+              //const { latitude, longitude } = locationData.coords;
               //cityName = await getCityFromCoordinates(latitude, longitude);
             } catch (e) {
               console.error("Error location", e);
@@ -71,18 +69,20 @@ export default (): JSX.Element => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email, lund: "I'm lund" }),
+          body: JSON.stringify({ email }),
         });
         if (res.ok) {
           console.log("Res is ok in Android");
           const data = await res.json();
           console.log(data);
           setUserr(data.user);
+          setPhotos(data.images);
           if (data.user) {
             try {
-              const locationData = JSON.parse(data.user.location);
+              /*const locationData = JSON.parse(data.user.location);
               const { latitude, longitude } = locationData.coords;
-              //cityName = await getCityFromCoordinates(latitude, longitude);
+              cityName = await getCityFromCoordinates(latitude, longitude);
+            */
             } catch (e) {
               console.error("Error location", e);
             }
@@ -104,6 +104,7 @@ export default (): JSX.Element => {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const newPhotos = [...photos];
+      //@ts-expect-error: W T F
       newPhotos[index] = result.assets[0].uri;
       setPhotos(newPhotos);
     }
