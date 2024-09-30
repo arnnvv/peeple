@@ -13,14 +13,6 @@ export const createTable = pgTableCreator(
   (name: string): string => `peeple_api_${name.toLowerCase()}`,
 );
 
-export const subscriptions = createTable("subscriptions", {
-  id: serial("id").primaryKey(),
-  type: varchar("subscriptiontype").notNull(),
-  price: integer("price").notNull(),
-  duration: integer("duration").notNull(),
-  features: jsonb("features"),
-});
-
 export const users = createTable("users", {
   id: varchar("id").primaryKey(),
   name: varchar("name"),
@@ -38,9 +30,7 @@ export const users = createTable("users", {
   date: integer("date"),
   month: integer("month"),
   year: integer("year"),
-  subscriptionid: integer("subscriptionid").references(() => subscriptions.id),
-  subscriptionstartdate: timestamp("subscriptionstartdate"),
-  subscriptionenddate: timestamp("subscriptionenddate"),
+  subscription: varchar("subscription"),
 });
 
 export type User = typeof users.$inferSelect;
