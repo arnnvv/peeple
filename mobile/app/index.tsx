@@ -87,7 +87,7 @@ export default (): JSX.Element => {
               logWithColor(`User email: ${email}`, "\x1b[36m"); // Cyan
               setEmaill(email);
 
-              const exists = await emailExists(email);
+              const exists = await userExists(email);
               logWithColor(
                 `Email exists check result: ${exists}`,
                 exists ? "\x1b[32m" : "\x1b[33m",

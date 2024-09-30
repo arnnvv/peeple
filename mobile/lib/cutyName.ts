@@ -1,35 +1,33 @@
-import {
-  AddressComponent,
-  Client,
-  GeocodingAddressComponentType,
-} from "@googlemaps/google-maps-services-js";
-
-const client = new Client();
+export const getMapsKey = (): string =>
+  process.env.MAPS_KEY ??
+  ((): never => {
+    throw new Error("GET maps key");
+  })();
 
 export const getCityFromCoordinates = async (
   lat: number,
   lng: number,
 ): Promise<string | null> => {
   try {
-    const response = await client.reverseGeocode({
-      params: {
-        latlng: [lat, lng],
-        key: "YOUR_GOOGLE_MAPS_API_KEY",
-      },
-    });
-
-    const addressComponents = response.data.results[0].address_components;
-
-    const cityComponent = addressComponents.find(
-      (component: AddressComponent): boolean =>
-        component.types.includes(
-          GeocodingAddressComponentType.point_of_interest,
-        ),
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${getMapsKey()}`,
     );
 
-    return cityComponent ? cityComponent.long_name : null;
+    // Parse JSON response
+    const data = await response.json();
+
+    // Check if the response has results
+    if (data.results && data.results.length > 0) {
+      // Find the 'locality' component
+      const city = data.results[0].address_components.find((component: any) =>
+        component.types.includes("locality"),
+      );
+      return city ? city.long_name : null;
+    } else {
+      return null;
+    }
   } catch (error) {
-    console.error("Error in reverse geocoding:", error);
+    console.error("Error fetching city name:", error);
     return null;
   }
 };
