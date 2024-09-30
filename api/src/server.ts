@@ -7,6 +7,8 @@ import { createTransport, SentMessageInfo } from "nodemailer";
 import jwt from "jsonwebtoken";
 import { v4 } from "uuid";
 import chalk from 'chalk';  // Import chalk for colored logs
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const app = e();
 const port: number = 3000;
@@ -383,6 +385,96 @@ app.post('/profile-images', async (req: Request, res: Response) => {
 
     // Log the error response
     console.log(chalk.red('Sent 500 response to client: Failed to upload image'));
+  }
+});
+
+const s3 = new S3Client({
+  region: "ap-south-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
+
+
+
+// POST route for uploading image to S3
+app.post('/upload-image', async (req, res) => {
+  console.log("ayush");
+  const { filename } = req.body;
+
+
+  logWithColor(`Starting image upload for: ${filename}`, "\x1b[34m");
+
+  try {
+    logWithColor(`Creating command to upload image to S3...`, "\x1b[34m");
+
+    const command = new PutObjectCommand({
+      Bucket: "peeple",          // Your S3 bucket name
+      Key: `uploads/${filename}`, // Path in S3 where the file will be stored
+      ContentType: "image/jpeg",
+    });
+
+    // Generate a signed URL for uploading
+    logWithColor(`Getting signed URL for upload...`, "\x1b[34m");
+
+    try {
+      const uploadUrl = await getSignedUrl(s3, command);
+      logWithColor(`Signed URL for uploading: ${uploadUrl}`, "\x1b[35m");
+
+      res.status(200).json({ message: 'Upload URL generated successfully', uploadUrl });
+    } catch (error: any) {
+      logWithColor(`Error getting signed URL: ${error.message}`, "\x1b[31m"); // Red color for errors
+      res.status(500).json({ error: 'Error generating signed URL', details: error.message });
+    }
+  } catch (error: any) {
+    logWithColor(`Error in uploadImageToS3: ${error.message}`, "\x1b[31m"); // Red color for errors
+    res.status(500).json({ error: 'Failed to initiate image upload', details: error.message });
+  }
+});
+
+// generate image seeing url
+app.post('/generate-url', async (req, res) => {
+  const { filename } = req.body;
+
+  // Logging the filename being processed
+  logWithColor(`Received request to generate URL for filename: ${filename}`, "\x1b[36m"); // Cyan
+
+  if (!filename) {
+    logWithColor('Filename not provided in request body', "\x1b[31m"); // Red
+    res.status(400).json({ error: 'Filename is required' });
+  }
+
+  try {
+    // Define function to get the signed URL
+    const getObjectURL = async (key: string) => {
+      try {
+        logWithColor(`Generating signed URL for object key: ${key}`, "\x1b[36m"); // Cyan
+        const command = new GetObjectCommand({
+          Bucket: "peeple", // Replace with your actual bucket name
+          Key: key,
+        });
+
+        const url = await getSignedUrl(s3, command);
+        logWithColor(`Generated signed URL: ${url}`, "\x1b[36m"); // Cyan
+        return url;
+
+      } catch (e: any) {
+        logWithColor(`Error in getObjectURL: ${e.message} for key: ${key}`, "\x1b[31m"); // Red
+        throw e;
+      }
+    };
+
+    // Use the function to get the URL for the filename passed in the request body
+    const key = `uploads/${filename}`;
+    const url = await getObjectURL(key);
+
+    logWithColor(`Uploaded image URL: ${url}`, "\x1b[35m"); // Magenta
+    res.json({ filename, url });
+
+  } catch (error: any) {
+    logWithColor(`Error in generating URL: ${error.message}`, "\x1b[31m"); // Red
+    res.status(500).json({ error: 'Failed to generate URL' });
   }
 });
 

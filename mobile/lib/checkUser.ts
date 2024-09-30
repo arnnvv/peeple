@@ -11,7 +11,7 @@ export const userExists = async (
     });
 
     if (!response.ok)
-      throw new Error(`Server responded with status: ${response.status}`);
+      throw new Error(`Server responded with status: ${response.status} ${response.text()}`);
 
     const data = await response.json();
     console.log(data);

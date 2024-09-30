@@ -15,69 +15,108 @@ import { bioAtom, nameAtom } from "@/lib/atom";
 import { router } from "expo-router";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+// import S3 from "aws-sdk/clients/s3";
+// import 'react-native-get-random-values';
+import { RNS3 } from 'react-native-s3-upload';
 
 // Colored console logging function
 const logWithColor = (message: string, color: string = "\x1b[37m") => {
   console.log(`${color}%s\x1b[0m`, message);
 };
 
-const s3 = new S3Client({
-  region: "ap-south-1",
-  credentials: {
-    accessKeyId: "",
-    secretAccessKey: "",
-  },
-});
+
 
 const uploadImageToS3 = async (username: string, imageUri: string, imageNumber: number) => {
   const filename = `${username}-${imageNumber}.jpeg`;
-  logWithColor(`Uploading image: ${filename}`, "\x1b[34m"); // Blue
+  logWithColor(`Starting image upload for: ${filename}`, "\x1b[34m"); // Blue
 
-  async function getObjectURL(key: any) {
-    const command = new GetObjectCommand({
-      Bucket: "peeple",
-      Key: key
+
+
+  try {
+
+    let uploadUrl = '';
+
+    try {
+      console.log('ayush is')
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/upload-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filename
+        })
+      });
+      console.log("comming back")
+      if (!response.ok) {
+        throw new Error(`Failed to upload image. Status: ${response.status} - ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      uploadUrl = result.uploadUrl;
+      console.log('Upload URL:', uploadUrl); // This URL can be used to upload the actual file to S3
+    } catch (error: any) {
+      console.error('Error during upload image request:', error.message);
+    }
+    // Fetch image as blob
+    logWithColor(`Fetching image from URI: ${imageUri}`, "\x1b[34m"); // Blue
+    const response = await fetch(imageUri);
+    if (!response.ok) {
+      logWithColor(`Failed to fetch image from URI: ${imageUri}`, "\x1b[31m"); // Red
+      throw new Error(`Image fetch failed with status: ${response.status} - ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    logWithColor(`Fetched image as blob successfully. Size: ${blob.size} bytes`, "\x1b[32m"); // Green
+
+    // Make the PUT request to upload the image using the signed URL
+    logWithColor(`Uploading image using signed URL...`, "\x1b[34m"); // Blue
+    const uploadResponse = await fetch(uploadUrl, {
+      method: "PUT",
+      body: blob,
+      headers: {
+        "Content-Type": "image/jpeg",
+      },
     });
 
-    const url = await getSignedUrl(s3, command);
-    return url;
-  }
+    if (uploadResponse.ok) {
+      logWithColor(`Image uploaded successfully: ${filename}`, "\x1b[32m"); // Green
+    } else {
+      const errorText = await uploadResponse.text();
+      logWithColor(`Failed to upload image: ${filename} with status: ${uploadResponse.status} - ${errorText}`, "\x1b[31m"); // Red
+      throw new Error(`Image upload failed with status: ${uploadResponse.status} - ${errorText}`);
+    }
+    // GET
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/generate-url`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ filename }),
+      });
 
+      // Check if the request was successful
+      if (!response.ok) {
+        throw new Error(`Error! Status: ${response.status}`);
+      }
 
-  const command = new PutObjectCommand({
-    Bucket: "peeple",
-    Key: `uploads/${filename}`,
-    ContentType: "image/jpeg",
-  });
+      // Parse the JSON response
+      const data = await response.json();
+      console.log(`Generated Signed URL: ${data.url}`);
+      return data;
 
-  // Generate a signed URL for uploading
-  const uploadUrl = await getSignedUrl(s3, command);
-  logWithColor(`Signed URL for uploading: ${uploadUrl}`, "\x1b[35m"); // Magenta
+    } catch (error: any) {
+      console.error(`Error fetching signed URL: ${error.message}`);
+      throw error;
+    }
 
-  // Fetch image as blob
-  const response = await fetch(imageUri);
-  const blob = await response.blob();
+  } catch (e: any) {
+    logWithColor(`Error during upload process: ${e.message}`, "\x1b[31m"); // Red
+    // Include contextual information
+    logWithColor(`Error context - Username: ${username}, Image URI: ${imageUri}, Image Number: ${imageNumber}`, "\x1b[31m"); // Red
+    throw e; // Rethrow the error for further handling if needed
 
-  // Make the PUT request to upload the image using the signed URL
-  const uploadResponse = await fetch(uploadUrl, {
-    method: "PUT",
-    body: blob,
-    headers: {
-      "Content-Type": "image/jpeg",
-    },
-  });
-
-  if (uploadResponse.ok) {
-    logWithColor(`Image uploaded successfully: ${filename}`, "\x1b[32m"); // Green
-  } else {
-    logWithColor(`Failed to upload image: ${filename}`, "\x1b[31m"); // Red
-    throw new Error("Image upload failed");
-  }
-
-  // Once the upload is successful, return the S3 file URL for viewing
-  const url = await getObjectURL(`uploads/${filename}`);
-  logWithColor(`Uploaded image URL: ${url}`, "\x1b[35m"); // Magenta
-  return { filename, url };
+  };
 };
 
 
@@ -175,7 +214,10 @@ export default (): JSX.Element => {
     if (validateFields()) {
       logWithColor("Validation passed. Proceeding with submission.", "\x1b[32m"); // Green
       for (let i = 0; i < images.length; i++) {
-        const { filename, url } = await uploadImageToS3(name, images[i], i + 1);
+        const { url, filename } = await uploadImageToS3(name, images[i], i + 1);
+        console.log('URL:', url);
+        console.log('Filename:', filename);
+
 
         logWithColor(`Posting image ${filename} to server`, "\x1b[34m"); // Blue
 
@@ -187,8 +229,8 @@ export default (): JSX.Element => {
           body: JSON.stringify({
             email: "user@example.com", // Replace with actual user email
             url,
-            imageName: filename,
-            imageNo: i + 1,
+
+
           }),
         });
       }
