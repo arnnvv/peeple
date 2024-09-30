@@ -126,6 +126,7 @@ export default (): JSX.Element => {
           {userr?.name}, {Number(new Date().getFullYear()) - (userr?.year || 0)}
         </Text>
         <Text style={styles.location}>{cityName}</Text>
+        {/*
         <View style={styles.actions}>
           <TouchableOpacity
             onPress={() => setEditing(!editing)}
@@ -137,6 +138,7 @@ export default (): JSX.Element => {
             </Text>
           </TouchableOpacity>
         </View>
+        */}
       </View>
       <ScrollView
         horizontal
