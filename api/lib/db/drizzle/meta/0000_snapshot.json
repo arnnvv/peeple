@@ -33,12 +33,8 @@
           "name": "peeple_api_likes_likerEmail_peeple_api_users_email_fk",
           "tableFrom": "peeple_api_likes",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "likerEmail"
-          ],
-          "columnsTo": [
-            "email"
-          ],
+          "columnsFrom": ["likerEmail"],
+          "columnsTo": ["email"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -46,12 +42,8 @@
           "name": "peeple_api_likes_likedEmail_peeple_api_users_email_fk",
           "tableFrom": "peeple_api_likes",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "likedEmail"
-          ],
-          "columnsTo": [
-            "email"
-          ],
+          "columnsFrom": ["likedEmail"],
+          "columnsTo": ["email"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -95,12 +87,8 @@
           "name": "peeple_api_matches_user1id_peeple_api_users_id_fk",
           "tableFrom": "peeple_api_matches",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "user1id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user1id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -108,12 +96,8 @@
           "name": "peeple_api_matches_user2id_peeple_api_users_id_fk",
           "tableFrom": "peeple_api_matches",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "user2id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user2id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -170,12 +154,8 @@
           "name": "peeple_api_messages_senderEmail_peeple_api_users_email_fk",
           "tableFrom": "peeple_api_messages",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "senderEmail"
-          ],
-          "columnsTo": [
-            "email"
-          ],
+          "columnsFrom": ["senderEmail"],
+          "columnsTo": ["email"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -183,12 +163,8 @@
           "name": "peeple_api_messages_receiverEmail_peeple_api_users_email_fk",
           "tableFrom": "peeple_api_messages",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "receiverEmail"
-          ],
-          "columnsTo": [
-            "email"
-          ],
+          "columnsFrom": ["receiverEmail"],
+          "columnsTo": ["email"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -225,12 +201,8 @@
           "name": "peeple_api_pictures_email_peeple_api_users_email_fk",
           "tableFrom": "peeple_api_pictures",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "email"
-          ],
-          "columnsTo": [
-            "email"
-          ],
+          "columnsFrom": ["email"],
+          "columnsTo": ["email"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -285,12 +257,8 @@
           "name": "peeple_api_userpreferences_userid_peeple_api_users_id_fk",
           "tableFrom": "peeple_api_userpreferences",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "userid"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userid"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -412,9 +380,7 @@
         "peeple_api_users_email_unique": {
           "name": "peeple_api_users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       }
     }
