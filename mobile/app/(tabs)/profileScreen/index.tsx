@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,15 @@ import {
   ScrollView,
 } from "react-native";
 import { Edit2, Camera, Settings, ChevronLeft } from "lucide-react-native";
-import * as ImagePicker from "expo-image-picker";
+import {
+  ImagePickerResult,
+  MediaTypeOptions,
+  launchImageLibraryAsync,
+} from "expo-image-picker";
 import { useLogout } from "@/lib/useLogout";
+import { User } from "./../../../../api/lib/db/schema";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getCityFromCoordinates } from "@/lib/cutyName";
 
 export default (): JSX.Element => {
   const [editing, setEditing] = useState(false);
@@ -20,30 +27,45 @@ export default (): JSX.Element => {
     "/api/placeholder/80/80?text=3",
     "/api/placeholder/80/80?text=4",
   ]);
-
+  const [user, setUser] = useState<User>();
   const handleLogout = useLogout();
+  let cityName;
 
-  const user = {
-    name: "John Doe",
-    birthDate: "1990-01-15", // YYYY-MM-DD format
-    location: "San Francisco, CA",
-    bio: "Software developer with a passion for building amazing applications. Love hiking and exploring new places!",
-    workplace: "Tech Company",
-    college: "University of California, Berkeley",
-    drink: "Socially",
-    smoke: "No",
-    religion: "None",
-    relationshipType: "Looking for friendship",
-  };
+  useEffect(() => {
+    (async () => {
+      const token = await AsyncStorage.getItem("token");
+      const res = await fetch("http://10.61.39.212:3000/get-user-from-token", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+        if (data.user && data.user.location) {
+          try {
+            const locationData = JSON.parse(data.user.location);
+            const { latitude, longitude } = locationData.coords;
+            cityName = await getCityFromCoordinates(latitude, longitude);
+          } catch (error) {
+            console.error("Error parsing location data:", error);
+          }
+        }
+      } else {
+        console.log("Error fetching user data");
+      }
+    })();
+  }, []);
 
   const openGallery = async (index: number): Promise<void> => {
-    const result: ImagePicker.ImagePickerResult =
-      await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,
-      });
+    const result: ImagePickerResult = await launchImageLibraryAsync({
+      mediaTypes: MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const newPhotos = [...photos];
@@ -54,7 +76,6 @@ export default (): JSX.Element => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity>
           <ChevronLeft style={styles.icon} />
@@ -64,14 +85,11 @@ export default (): JSX.Element => {
           <Settings style={styles.icon} />
         </TouchableOpacity>
       </View>
-
-      {/* Name and Actions */}
       <View style={styles.nameActions}>
         <Text style={styles.name}>
-          {user.name},{" "}
-          {new Date().getFullYear() - new Date(user.birthDate).getFullYear()}
+          {user?.name}, {Number(new Date().getFullYear()) - (user?.year || 0)}
         </Text>
-        <Text style={styles.location}>{user.location}</Text>
+        <Text style={styles.location}>{cityName}</Text>
         <View style={styles.actions}>
           <TouchableOpacity
             onPress={() => setEditing(!editing)}
@@ -84,71 +102,76 @@ export default (): JSX.Element => {
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* Photo Gallery */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.photoGallery}
       >
-        {photos.map((photo, index) => (
-          <View key={index} style={styles.photoContainer}>
-            <Image source={{ uri: photo }} style={styles.photo} />
-            {editing && (
-              <TouchableOpacity
-                style={styles.cameraButton}
-                onPress={() => openGallery(index)}
-              >
-                <Camera style={styles.cameraIcon} />
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
+        {photos.map(
+          (photo: string, index: number): JSX.Element => (
+            <View key={index} style={styles.photoContainer}>
+              <Image source={{ uri: photo }} style={styles.photo} />
+              {editing && (
+                <TouchableOpacity
+                  style={styles.cameraButton}
+                  onPress={() => openGallery(index)}
+                >
+                  <Camera style={styles.cameraIcon} />
+                </TouchableOpacity>
+              )}
+            </View>
+          ),
+        )}
       </ScrollView>
-
-      {/* About Me */}
       <View style={styles.aboutSection}>
         <Text style={styles.aboutTitle}>About Me</Text>
         {editing ? (
           <TextInput
-            defaultValue={user.bio}
+            //@ts-expect-error: W T F
+            defaultValue={user?.bio}
             multiline
             style={styles.textArea}
           />
         ) : (
-          <Text style={styles.bio}>{user.bio}</Text>
+          <Text style={styles.bio}>{user?.bio}</Text>
         )}
       </View>
-
-      {/* Quick Info */}
       <View style={styles.quickInfoSection}>
         <Text style={styles.quickInfoTitle}>Quick Info</Text>
         <View style={styles.quickInfoGrid}>
           {[
-            { icon: "👔", label: "Work", value: user.workplace },
-            { icon: "🎓", label: "Education", value: user.college },
-            { icon: "🍷", label: "Drinks", value: user.drink },
-            { icon: "🚬", label: "Smokes", value: user.smoke },
-            { icon: "🙏", label: "Religion", value: user.religion },
-            { icon: "💑", label: "Looking for", value: user.relationshipType },
-          ].map(({ icon, label, value }) => (
-            <View key={label} style={styles.quickInfoItem}>
-              <Text style={styles.quickInfoIcon}>{icon}</Text>
-              <View style={styles.quickInfoTextContainer}>
-                <Text style={styles.quickInfoLabel}>{label}</Text>
-                <Text style={styles.quickInfoValue}>{value}</Text>
+            { icon: "👔", label: "Work", value: user?.occupationArea },
+            { icon: "🎓", label: "Education", value: user?.occupationField },
+            { icon: "🍷", label: "Drinks", value: user?.drink },
+            { icon: "🚬", label: "Smokes", value: user?.smoke },
+            { icon: "🙏", label: "Religion", value: user?.religion },
+            { icon: "💑", label: "Looking for", value: user?.relationshiptype },
+          ].map(
+            ({
+              icon,
+              label,
+              value,
+            }: {
+              icon: string;
+              label: string;
+              value: string | null | undefined;
+            }): JSX.Element => (
+              <View key={label} style={styles.quickInfoItem}>
+                <Text style={styles.quickInfoIcon}>{icon}</Text>
+                <View style={styles.quickInfoTextContainer}>
+                  <Text style={styles.quickInfoLabel}>{label}</Text>
+                  <Text style={styles.quickInfoValue}>{value}</Text>
+                </View>
+                {editing && (
+                  <TouchableOpacity>
+                    <Edit2 style={styles.editCardIcon} />
+                  </TouchableOpacity>
+                )}
               </View>
-              {editing && (
-                <TouchableOpacity>
-                  <Edit2 style={styles.editCardIcon} />
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
+            ),
+          )}
         </View>
       </View>
-
-      {/* Upgrade Section */}
       <View style={styles.upgradeSection}>
         <Text style={styles.upgradeTitle}>Upgrade Your Experience</Text>
         <Text style={styles.upgradeText}>

@@ -186,6 +186,33 @@ app.post("/verify-token", (req: Request, res: Response) => {
   }
 });
 
+app.post("/get-user-from-token", async (req: Request, res: Response) => {
+  logWithColor("POST /verify-token - Request received", "\x1b[36m"); // Cyan
+  const token = req.headers["authorization"]?.split(" ")[1];
+  logWithColor(`Received token: ${token}`, "\x1b[33m"); // Yellow
+
+  if (!token) {
+    logWithColor("No token provided", "\x1b[31m"); // Red
+    res.status(401).json({ error: "Token missing" });
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, getJWTSECRET());
+    logWithColor(`Token verified, decoded email: ${decoded}`, "\x1b[32m"); // Green
+    //@ts-expect-error: h i o
+    const email = decoded.email;
+    console.log(email);
+    const userr = await db.select().from(users).where(eq(users.email, email));
+    const user = userr[0];
+    console.log(user);
+    res.json({ user });
+  } catch (e) {
+    logWithColor(`Token verification failed: ${e}`, "\x1b[31m"); // Red
+    res.status(401).json({ error: "Invalid token" });
+  }
+});
+
 // Create or update user
 app.post("/create-user", async (req: Request, res: Response) => {
   logWithColor("POST /create-user - Request received", "\x1b[36m"); // Cyan

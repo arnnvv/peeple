@@ -43,6 +43,8 @@ export const users = createTable("users", {
   subscriptionenddate: timestamp("subscriptionenddate"),
 });
 
+export type User = typeof users.$inferSelect;
+
 export const pictures = createTable("pictures", {
   id: serial("id").primaryKey(),
   userid: varchar("userid", { length: 21 })

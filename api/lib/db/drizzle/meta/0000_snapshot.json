@@ -40,12 +40,8 @@
           "name": "peeple_api_likes_likerid_peeple_api_users_id_fk",
           "tableFrom": "peeple_api_likes",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "likerid"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["likerid"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -53,12 +49,8 @@
           "name": "peeple_api_likes_likedid_peeple_api_users_id_fk",
           "tableFrom": "peeple_api_likes",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "likedid"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["likedid"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -109,12 +101,8 @@
           "name": "peeple_api_matches_user1id_peeple_api_users_id_fk",
           "tableFrom": "peeple_api_matches",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "user1id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user1id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -122,12 +110,8 @@
           "name": "peeple_api_matches_user2id_peeple_api_users_id_fk",
           "tableFrom": "peeple_api_matches",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "user2id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user2id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -184,12 +168,8 @@
           "name": "peeple_api_messages_matchid_peeple_api_matches_id_fk",
           "tableFrom": "peeple_api_messages",
           "tableTo": "peeple_api_matches",
-          "columnsFrom": [
-            "matchid"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["matchid"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -197,12 +177,8 @@
           "name": "peeple_api_messages_senderid_peeple_api_users_id_fk",
           "tableFrom": "peeple_api_messages",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "senderid"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["senderid"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -253,12 +229,8 @@
           "name": "peeple_api_pictures_userid_peeple_api_users_id_fk",
           "tableFrom": "peeple_api_pictures",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "userid"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userid"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -354,12 +326,8 @@
           "name": "peeple_api_userpreferences_userid_peeple_api_users_id_fk",
           "tableFrom": "peeple_api_userpreferences",
           "tableTo": "peeple_api_users",
-          "columnsFrom": [
-            "userid"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userid"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -498,12 +466,8 @@
           "name": "peeple_api_users_subscriptionid_peeple_api_subscriptions_id_fk",
           "tableFrom": "peeple_api_users",
           "tableTo": "peeple_api_subscriptions",
-          "columnsFrom": [
-            "subscriptionid"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["subscriptionid"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -513,9 +477,7 @@
         "peeple_api_users_email_unique": {
           "name": "peeple_api_users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       }
     }
@@ -524,37 +486,22 @@
     "public.drink": {
       "name": "drink",
       "schema": "public",
-      "values": [
-        "yes",
-        "no",
-        "occasionally"
-      ]
+      "values": ["yes", "no", "occasionally"]
     },
     "public.gender": {
       "name": "gender",
       "schema": "public",
-      "values": [
-        "male",
-        "female"
-      ]
+      "values": ["male", "female"]
     },
     "public.occupation": {
       "name": "occupation",
       "schema": "public",
-      "values": [
-        "student",
-        "professional"
-      ]
+      "values": ["student", "professional"]
     },
     "public.relationshiptype": {
       "name": "relationshiptype",
       "schema": "public",
-      "values": [
-        "casual",
-        "serious",
-        "hookups",
-        "friendship"
-      ]
+      "values": ["casual", "serious", "hookups", "friendship"]
     },
     "public.religion": {
       "name": "religion",
@@ -573,20 +520,12 @@
     "public.smoke": {
       "name": "smoke",
       "schema": "public",
-      "values": [
-        "yes",
-        "no",
-        "occasionally"
-      ]
+      "values": ["yes", "no", "occasionally"]
     },
     "public.subscriptiontype": {
       "name": "subscriptiontype",
       "schema": "public",
-      "values": [
-        "free",
-        "premium",
-        "gold"
-      ]
+      "values": ["free", "premium", "gold"]
     }
   },
   "schemas": {},
