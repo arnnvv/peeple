@@ -28,13 +28,16 @@ export default (): JSX.Element => {
 
   const onPress = useCallback(async () => {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/verify-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API}/verify-otp`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, otp }),
         },
-        body: JSON.stringify({ email, otp }),
-      });
+      );
 
       if (response.ok) {
         const { token } = await response.json();
