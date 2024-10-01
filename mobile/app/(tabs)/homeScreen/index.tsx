@@ -151,7 +151,6 @@ export default (): JSX.Element => {
   };
 
   const handleLike = (profileId: any) => {
-    //@ts-expect-error: W T F
     setLikedProfiles((prev) => [...prev, profileId]);
   };
 
