@@ -23,6 +23,52 @@ export default (): JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const getLikedBy = async () => {
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/liked-by`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }), // Sending the email in the request body
+      });
+
+      // Check if the response is ok (status in the range 200-299)
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+
+      const data = await response.json(); // Parse the response as JSON
+      console.log("\x1b[32m[Success] Users who liked:", data.likedByUsers);
+      return data.likedByUsers; // Return the list of users who liked
+    } catch (error) {
+      console.error("\x1b[31m[Error] Failed to fetch liked by users:", error);
+    }
+  };
+
+  const getMutualLikes = async () => {
+    try {
+      const response = await fetch("http://your-api-url/mutual-likes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      // Check if the response is OK (status code 200-299)
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch mutual likes");
+      }
+
+      const data = await response.json();
+      console.log("Mutual Likes:", data.mutualLikes); // Log the mutual likes data
+      return data.mutualLikes; // Return the mutual likes data
+    } catch (error) {
+      console.error("Error fetching mutual likes:", error);
+      throw error; // Re-throw the error for further handling if needed
+    }
+  };
   useEffect(() => {
     const fetchRecommendations = async () => {
       console.log("[Fetching] Requesting recommendations for:", email);

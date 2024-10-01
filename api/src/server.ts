@@ -1,8 +1,8 @@
 import e, { Request, Response } from "express";
 import cors from "cors";
 import { db } from "../lib/db";
-import { pictures, users } from "../lib/db/schema";
-import { eq } from "drizzle-orm";
+import { likes, pictures, users } from "../lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { createTransport, SentMessageInfo } from "nodemailer";
 import jwt from "jsonwebtoken";
 import { v4 } from "uuid";
@@ -521,6 +521,140 @@ app.post("updateUserPlan", async (req: Request, res: Response) => {
     res.json({ success: true });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/add-like", async (req: Request, res: Response) => {
+  try {
+    const { likerEmail, likedEmail } = req.body;
+
+    // Check if both emails are provided
+    if (!likerEmail || !likedEmail) {
+      res.status(400).json({
+        message: "Both likerEmail and likedEmail must be provided.",
+      });
+    }
+
+    console.log(
+      `\x1b[36m[Debug] Received likerEmail: ${likerEmail}, likedEmail: ${likedEmail}`,
+    );
+
+    // Insert into the 'likes' table
+    await db.insert(likes).values({
+      likerEmail,
+      likedEmail,
+    });
+
+    console.log("\x1b[32m[Success] Like added successfully");
+
+    // Respond with success
+    res.status(201).json({
+      message: "Like added successfully.",
+      likerEmail,
+      likedEmail,
+    });
+  } catch (error) {
+    console.error("\x1b[31m[Error] Failed to add like:", error);
+    res.status(500).json({
+      message: "Failed to add like.",
+      error: error,
+    });
+  }
+});
+
+app.post("/liked-by", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    // Check if the email is provided
+    if (!email) {
+      res.status(400).json({
+        message: "User email must be provided.",
+      });
+    }
+
+    console.log(`\x1b[36m[Debug] Fetching users who liked: ${email}`);
+
+    // Query the likes table to find all users who liked this user
+    const likedByUsers = await db
+      .select({
+        likerEmail: users.email,
+        likerName: users.name,
+      })
+      .from(likes)
+      .innerJoin(users, eq(likes.likerEmail, users.email)) // Correct usage of eq for inner join
+      .where(eq(likes.likedEmail, email)); // Ensure to use eq for where condition
+
+    console.log("\x1b[32m[Success] Users fetched successfully:", likedByUsers);
+
+    // Respond with the list of users who liked this user
+    res.status(200).json({
+      message: "Users fetched successfully.",
+      likedByUsers,
+    });
+  } catch (error: any) {
+    console.error("\x1b[31m[Error] Failed to fetch users:", error);
+    res.status(500).json({
+      message: "Failed to fetch users.",
+      error: error.message,
+    });
+  }
+});
+
+app.post("/mutual-likes", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    // Check if the email is provided
+    if (!email) {
+      res.status(400).json({
+        message: "User email must be provided.",
+      });
+    }
+
+    console.log(`\x1b[36m[Debug] Fetching mutual likes for: ${email}`);
+
+    // Raw SQL query to find mutual likes along with user details
+    const mutualLikes = await db.execute(sql`
+      SELECT 
+        u.name AS userName,
+        u.email AS likedEmail,
+        u.instaId,
+        u.phone,
+        p.url AS photoUrl
+      FROM likes AS l1
+      INNER JOIN likes AS l2 ON l1.liker_email = l2.liked_email
+      INNER JOIN users AS u ON l1.liked_email = u.email
+      LEFT JOIN pictures AS p ON u.email = p.email
+      WHERE l1.liked_email = ${email}
+        AND l2.liker_email = ${email}
+    `);
+
+    // Extracting results from the returned data
+    const results = mutualLikes.rows.map((row) => ({
+      userName: row.userName,
+      likedEmail: row.likedEmail,
+      instaId: row.instaId,
+      phone: row.phone,
+      photoUrl: row.photoUrl, // URL of the photo
+    }));
+
+    console.log(
+      "\x1b[32m[Success] Mutual likes fetched successfully:",
+      results,
+    );
+
+    // Respond with the list of mutual likes along with user details
+    res.status(200).json({
+      message: "Mutual likes fetched successfully.",
+      mutualLikes: results, // Responding with the extracted user details
+    });
+  } catch (error: any) {
+    console.error("\x1b[31m[Error] Failed to fetch mutual likes:", error);
+    res.status(500).json({
+      message: "Failed to fetch mutual likes.",
+      error: error.message,
+    });
   }
 });
 
