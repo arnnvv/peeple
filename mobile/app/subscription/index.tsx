@@ -16,7 +16,6 @@ interface PlanCardProps {
 }
 
 const SubscriptionScreen: React.FC = () => {
-
   const email = useAtomValue(emailAtom);
   console.log(email);
   return (
@@ -67,17 +66,19 @@ const PlanCard: React.FC<PlanCardProps> = ({
   const handleSubscribe = () => {
     if (isPremium) {
       // Link for premium plan
-      console.log('Redirecting to premium subscription page');
+      console.log("Redirecting to premium subscription page");
       router.replace(`http://10.61.62.21:3001/payment/${email}-premium`);
     } else {
       // Link for regular plan
-      console.log('Redirecting to regular subscription page');
+      console.log("Redirecting to regular subscription page");
       router.replace(`http://10.61.62.21:3001/payment/${email}-basic`);
     }
   };
 
   return (
-    <TouchableOpacity style={[styles.planCard, isPremium && styles.premiumCard]}>
+    <TouchableOpacity
+      style={[styles.planCard, isPremium && styles.premiumCard]}
+    >
       <View style={styles.planIconContainer}>{icon}</View>
       <Text style={styles.planTitle}>{title}</Text>
       <Text style={styles.planPrice}>{price}</Text>
@@ -87,7 +88,10 @@ const PlanCard: React.FC<PlanCardProps> = ({
           <Text style={styles.featureText}>{feature}</Text>
         </View>
       ))}
-      <TouchableOpacity style={styles.subscribeButton} onPress={handleSubscribe}>
+      <TouchableOpacity
+        style={styles.subscribeButton}
+        onPress={handleSubscribe}
+      >
         <Text style={styles.subscribeButtonText}>Buy Now</Text>
       </TouchableOpacity>
     </TouchableOpacity>

@@ -1,71 +1,28 @@
-import { emailAtom } from "@/lib/atom";
-import { useAtomValue } from "jotai";
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  ScrollView,
   Image,
-  TouchableOpacity,
   StyleSheet,
-  Animated,
-  PanResponder,
   Dimensions,
-  GestureResponderEvent,
-  PanResponderGestureState,
+  ScrollView,
 } from "react-native";
+import { useAtomValue } from "jotai";
+import { emailAtom } from "@/lib/atom";
+import Swiper from "react-native-deck-swiper";
+import { Ionicons } from "@expo/vector-icons";
 
-const { width } = Dimensions.get("window");
-
-interface Profile {
-  id: string;
-  name: string;
-  email: string;
-  location: string;
-  gender: string;
-  relationshiptype: string;
-  height: number;
-  religion: string;
-  occupationField: string;
-  occupationArea: string;
-  drink: string;
-  smoke: string;
-  bio: string;
-  date: number;
-  month: number;
-  year: number;
-  subscription: string;
-  instaId: string;
-  phone: string;
-  image: string;
-}
-
-const SWIPE_THRESHOLD = 120;
-const TOP_MARGIN = 100;
-
-const calculateAge = (day: number, month: number, year: number): number => {
-  const today = new Date();
-  const birthDate = new Date(year, month - 1, day); // Month is 0-indexed in JavaScript Date object
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  const dayDiff = today.getDate() - birthDate.getDate();
-  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-    age--;
-  }
-
-  return age;
-};
+const { width, height } = Dimensions.get("window");
 
 export default (): JSX.Element => {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [likedProfiles, setLikedProfiles] = useState([]);
   const email = useAtomValue(emailAtom);
-  const position = useRef(
-    new Animated.ValueXY({ x: 0, y: TOP_MARGIN }),
-  ).current;
+  const [recommendations, setRecommendations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    (async () => {
+    const fetchRecommendations = async () => {
+      console.log("\x1b[34m[Fetching] Requesting recommendations for:", email);
       try {
         const res = await fetch(
           `${process.env.EXPO_PUBLIC_API}/get-recommendations`,
@@ -78,216 +35,109 @@ export default (): JSX.Element => {
           },
         );
 
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        if (!res.ok) {
+          console.log(`\x1b[31m[Error] HTTP error! status: ${res.status}`);
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
 
         const data = await res.json();
-        const recommendations = data.recommendations;
-        console.log("Recommendations:", recommendations);
-        console.log(recommendations[0].image);
-        setProfiles(recommendations);
-
-        return recommendations;
-      } catch (error) {
-        throw error;
+        setRecommendations(data.recommendations);
+        console.log(
+          `\x1b[36m[Debug] Recommendations fetched:`,
+          data.recommendations,
+        );
+      } catch (error: any) {
+        console.log(`\x1b[31m[Error] Fetch failed:`, error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
-    })();
-  }, []);
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (): true => true,
-      onPanResponderMove: (
-        _: GestureResponderEvent,
-        gestureState: PanResponderGestureState,
-      ) => {
-        const newPositionY = gestureState.dx * 0.2;
-        position.setValue({ x: gestureState.dx, y: newPositionY + TOP_MARGIN });
-      },
-      onPanResponderRelease: (
-        _: GestureResponderEvent,
-        gestureState: PanResponderGestureState,
-      ) => {
-        if (gestureState.dx > SWIPE_THRESHOLD) {
-          swipeRight();
-        } else if (gestureState.dx < -SWIPE_THRESHOLD) {
-          swipeLeft();
-        } else {
-          resetPosition();
-        }
-      },
-    }),
-  ).current;
+    };
 
-  const swipeRight = () => {
-    Animated.timing(position, {
-      toValue: { x: width + 100, y: TOP_MARGIN },
-      duration: 250,
-      useNativeDriver: false,
-    }).start(() => removeProfile());
-  };
+    fetchRecommendations();
+  }, [email]);
 
-  const swipeLeft = () => {
-    Animated.timing(position, {
-      toValue: { x: -width - 100, y: TOP_MARGIN },
-      duration: 250,
-      useNativeDriver: false,
-    }).start(() => removeProfile());
-  };
+  const renderCard = (card: any) => {
+    if (!card) return null;
 
-  const resetPosition = () => {
-    Animated.spring(position, {
-      toValue: { x: 0, y: TOP_MARGIN },
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const removeProfile = () => {
-    setProfiles((prevProfiles: Profile[]): Profile[] => {
-      if (prevProfiles.length <= 1) {
-        return []; // No more profiles to show
-      }
-      return prevProfiles.slice(1);
-    });
-    position.setValue({ x: 0, y: TOP_MARGIN });
-  };
-
-  const handleLike = (profileId: any) => {
-    //@ts-expect-error: W T F
-    setLikedProfiles((prev) => [...prev, profileId]);
-  };
-
-  const renderCard = (profile: Profile, index: number): JSX.Element | null => {
-    if (index >= 2) return null;
-
-    const isFirst = index === 0;
-    const panHandlers = isFirst ? panResponder.panHandlers : {};
-    const cardStyle = isFirst
-      ? {
-          ...position.getLayout(),
-          transform: [
-            {
-              rotate: position.x.interpolate({
-                inputRange: [-width / 2, width / 2],
-                outputRange: ["-10deg", "10deg"],
-                extrapolate: "clamp",
-              }),
-            },
-          ],
-          zIndex: profiles.length - index,
-        }
-      : {
-          zIndex: profiles.length - index,
-        };
-
-    const additionalDetails = [
-      { icon: "🍷", label: "Drinks", value: profile.drink },
-      { icon: "🚬", label: "Smokes", value: profile.smoke },
-      { icon: "🙏", label: "Religion", value: profile.religion },
-      { icon: "💑", label: "Looking for", value: profile.relationshiptype },
-    ];
+    const parsedLocation = JSON.parse(card.location || "{}").coords || {};
 
     return (
-      <Animated.View
-        key={profile.id}
-        style={[styles.card, cardStyle]}
-        {...panHandlers}
-      >
-        <ScrollView>
-          <Image source={{ uri: profile.image }} style={styles.image} />
-          <View style={styles.cardContent}>
-            <Text style={styles.name}>
-              {profile.name},{" "}
-              {calculateAge(profile.date, profile.month, profile.year)}
+      <View style={styles.card}>
+        <Image source={{ uri: card.photo }} style={styles.image} />
+        <ScrollView contentContainerStyle={styles.cardContent}>
+          <Text style={styles.name}>
+            {card.name}, {new Date().getFullYear() - card.year}
+          </Text>
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>
+              {parsedLocation.latitude?.toFixed(2)},{" "}
+              {parsedLocation.longitude?.toFixed(2)}
             </Text>
-            <Text style={styles.location}>{profile.location}</Text>
-            <Text style={styles.bio}>{profile.bio}</Text>
-
-            {/*@ts-expect-error: W T F*/}
-            {likedProfiles.includes(profile.id) && (
-              <Text style={styles.likedMessage}>
-                {profile.name} has liked your profile
-              </Text>
-            )}
-
-            <View style={styles.additionalDetails}>
-              {additionalDetails.map(
-                (
-                  detail: { icon: string; label: string; value: any },
-                  i: number,
-                ): JSX.Element | null =>
-                  detail.value ? (
-                    <View key={i} style={styles.detailItem}>
-                      <Text style={styles.detailIcon}>{detail.icon}</Text>
-                      <Text style={styles.detailLabel}>{detail.label}:</Text>
-                      <Text style={styles.detailValue}>{detail.value}</Text>
-                    </View>
-                  ) : null,
-              )}
-            </View>
           </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="briefcase-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>
+              {card.occupationField} - {card.occupationArea}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="heart-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>
+              Relationship: {card.relationshiptype || "N/A"}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="beer-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>Drinks: {card.drink || "N/A"}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="logo-no-smoking" size={16} color="#666" />
+            <Text style={styles.infoText}>Smokes: {card.smoke || "N/A"}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>
+              {card.month}/{card.date}/{card.year}
+            </Text>
+          </View>
+          <Text style={styles.bio} numberOfLines={4} ellipsizeMode="tail">
+            {card.bio}
+          </Text>
         </ScrollView>
-      </Animated.View>
+      </View>
     );
   };
 
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text>Error: {error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Peeple</Text>
-      </View>
-
-      {profiles.map((profile: Profile, index: number): JSX.Element | null =>
-        renderCard(profile, index),
-      )}
-
-      <Animated.View
-        style={[
-          styles.crossIconContainer,
-          {
-            left: position.x.interpolate({
-              inputRange: [-width, 0],
-              outputRange: [20, -100],
-              extrapolate: "clamp",
-            }),
-            opacity: position.x.interpolate({
-              inputRange: [-width, -50],
-              outputRange: [1, 0],
-              extrapolate: "clamp",
-            }),
-          },
-        ]}
-      >
-        <Text style={styles.crossIcon}>X</Text>
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.heartIconContainer,
-          {
-            right: position.x.interpolate({
-              inputRange: [0, width],
-              outputRange: [-100, 20],
-              extrapolate: "clamp",
-            }),
-            opacity: position.x.interpolate({
-              inputRange: [50, width],
-              outputRange: [0, 1],
-              extrapolate: "clamp",
-            }),
-          },
-        ]}
-      >
-        <TouchableOpacity onPress={() => handleLike(profiles[0].id)}>
-          <Text style={styles.heartIcon}>❤</Text>
-        </TouchableOpacity>
-      </Animated.View>
-
-      {profiles.length === 0 && (
-        <View style={styles.noProfilesContainer}>
-          <Text style={styles.noProfilesText}>
-            That's all folks! No more profiles to explore.
-          </Text>
-        </View>
-      )}
+      <Swiper
+        cards={recommendations}
+        renderCard={renderCard}
+        onSwiped={(cardIndex: number) => console.log(cardIndex)}
+        onSwipedAll={() => console.log("onSwipedAll")}
+        cardIndex={0}
+        backgroundColor={"#f2f2f2"}
+        stackSize={3}
+        verticalSwipe={false}
+      />
     </View>
   );
 };
@@ -295,135 +145,57 @@ export default (): JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f0f2f5",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-    marginTop: 40,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#8B5CF6",
+    backgroundColor: "#f2f2f2",
   },
   card: {
-    position: "absolute",
-    top: TOP_MARGIN,
-    left: 0,
-    right: 0,
-    bottom: 5,
-    marginHorizontal: "5%",
+    width: width * 0.9,
+    height: height * 0.75, // Adjusted to fit iPhone 12 screen better
     borderRadius: 20,
     backgroundColor: "white",
     shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-    width: "90%",
-    height: "85%",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    overflow: "hidden", // Prevent content overflow
   },
   image: {
     width: "100%",
-    height: 400,
+    height: "50%", // Reduce image height for more content space
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    resizeMode: "cover",
-    alignSelf: "flex-start",
   },
   cardContent: {
-    padding: 10,
+    flexGrow: 1,
+    padding: 20,
   },
   name: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#2D3748",
+    marginBottom: 10,
   },
-  location: {
-    fontSize: 16,
-    color: "#718096",
-    marginTop: 3,
-  },
-  bio: {
-    fontSize: 14,
-    color: "#4A5568",
-    marginTop: 5,
-  },
-  likedMessage: {
-    fontSize: 14,
-    color: "red",
-    marginTop: 5,
-    fontStyle: "italic",
-  },
-  additionalDetails: {
-    marginTop: 10,
-  },
-  noProfilesContainer: {
-    position: "absolute",
-    top: "35%",
-    left: "20%", // Center horizontally
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    padding: 20,
-    borderRadius: 10,
-    height: 250, // Increased height for the card
-    shadowColor: "#000", // Shadow color for iOS
-    shadowOffset: { width: 0, height: 2 }, // Shadow offset
-    shadowOpacity: 0.3, // Shadow opacity
-    shadowRadius: 4, // Shadow blur radius
-    zIndex: 100,
-    width: "60%", // Set width for the card
-    maxWidth: 400, // Optional: max width for larger screens, // Center vertically
-  },
-  noProfilesText: {
-    fontSize: 24, // Normal size for visibility
-    fontWeight: "normal", // Normal weight for text
-    color: "#8B5CF6",
-    textAlign: "center",
-    fontFamily: "Arial", // Normal font for better readability
-  },
-
-  detailItem: {
+  infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 3,
+    marginBottom: 5,
   },
-  detailIcon: {
-    fontSize: 18,
-    marginRight: 6,
+  infoText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: "#666",
   },
-  detailLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#4A5568",
+  bio: {
+    fontSize: 16,
+    marginTop: 10,
+    color: "#444",
+    flexShrink: 1,
   },
-  detailValue: {
-    fontSize: 14,
-    color: "#2D3748",
-    marginLeft: 5,
-  },
-  crossIconContainer: {
-    position: "absolute",
-    top: "50%",
-    transform: [{ translateY: -30 }],
-    zIndex: 100,
-  },
-  heartIconContainer: {
-    position: "absolute",
-    top: "50%",
-    transform: [{ translateY: -30 }],
-    zIndex: 100,
-  },
-  crossIcon: {
-    fontSize: 60,
-    color: "#FF5252",
-  },
-  heartIcon: {
-    fontSize: 60,
-    color: "#4CAF50",
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
