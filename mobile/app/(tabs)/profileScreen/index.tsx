@@ -175,11 +175,10 @@ export default (): JSX.Element => {
         </Text>
         <TouchableOpacity
           style={styles.upgradeButton}
-          onPress={() => router.replace('../../subscription')}
+          onPress={() => router.replace("../../subscription")}
         >
           <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
         </TouchableOpacity>
-
       </View>
       <View style={styles.quickInfoSection}>
         <Text style={styles.quickInfoTitle}>Quick Info</Text>
@@ -195,25 +194,26 @@ export default (): JSX.Element => {
               label: "Looking for",
               value: userr?.relationshiptype,
             },
-          ].map(({ icon, label, value }): JSX.Element => (
-            <View key={label} style={styles.quickInfoItem}>
-              <Text style={styles.quickInfoIcon}>{icon}</Text>
-              <View style={styles.quickInfoTextContainer}>
-                <Text style={styles.quickInfoLabel}>{label}</Text>
-                <Text style={styles.quickInfoValue}>{value}</Text>
+          ].map(
+            ({ icon, label, value }): JSX.Element => (
+              <View key={label} style={styles.quickInfoItem}>
+                <Text style={styles.quickInfoIcon}>{icon}</Text>
+                <View style={styles.quickInfoTextContainer}>
+                  <Text style={styles.quickInfoLabel}>{label}</Text>
+                  <Text style={styles.quickInfoValue}>{value}</Text>
+                </View>
+                {editing && (
+                  <TouchableOpacity>
+                    <Edit2 style={styles.editCardIcon} />
+                  </TouchableOpacity>
+                )}
               </View>
-              {editing && (
-                <TouchableOpacity>
-                  <Edit2 style={styles.editCardIcon} />
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
+            ),
+          )}
         </View>
       </View>
     </ScrollView>
   );
-
 };
 
 const styles = StyleSheet.create({
