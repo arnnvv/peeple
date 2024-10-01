@@ -12,7 +12,7 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getEmail, getReccomendations } from "../lib/helpers";
+import { getEmail, getRecommendations } from "../lib/helpers";
 
 const app = e();
 const port: number = 3000;
@@ -472,13 +472,19 @@ app.post("/generate-url", async (req, res) => {
   }
 });
 
-app.post("get-reccomendations", async (req: Request, res: Response) => {
+app.post("/get-recommendations", async (req: Request, res: Response) => {
+  console.log("HEYYYYYY");
   const { email } = req.body;
+  if (!email) res.status(400).json({ error: "Email is required." });
+
+  console.log(email, "is sent");
   try {
-    const reccomendations = await getReccomendations(email);
-    res.json({ reccomendations });
+    const recommendations = await getRecommendations(email);
+    console.log(recommendations);
+    res.json({ recommendations });
   } catch (e) {
-    throw new Error(`${e}`);
+    console.error("Error fetching recommendations:", e);
+    res.status(500).json({ error: "Failed to fetch recommendations." });
   }
 });
 
