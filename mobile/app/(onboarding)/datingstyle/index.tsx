@@ -91,17 +91,20 @@ export default function RelationshipPreference(): JSX.Element {
     };
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/create-user`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Add any authentication headers if required
-          // 'Authorization': 'Bearer YOUR_TOKEN_HERE',
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API}/create-user`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Add any authentication headers if required
+            // 'Authorization': 'Bearer YOUR_TOKEN_HERE',
+          },
+          body: JSON.stringify({
+            user: newUser,
+          }),
         },
-        body: JSON.stringify({
-          user: newUser,
-        }),
-      });
+      );
 
       if (!response.ok) {
         const errorData = await response.json();

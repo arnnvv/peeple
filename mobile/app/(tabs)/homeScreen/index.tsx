@@ -1,4 +1,6 @@
-import { useState, useRef } from "react";
+import { emailAtom } from "@/lib/atom";
+import { useAtomValue } from "jotai";
+import { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,137 +18,80 @@ import {
 const { width } = Dimensions.get("window");
 
 interface Profile {
-  id: number;
+  id: string;
   name: string;
-  age: number;
+  email: string;
   location: string;
-  bio: string;
-  photos: string[];
-  workplace: string;
-  college: string;
+  gender: string;
+  relationshiptype: string;
+  height: number;
+  religion: string;
+  occupationField: string;
+  occupationArea: string;
   drink: string;
   smoke: string;
-  religion: string;
-  relationshipType: string;
+  bio: string;
+  date: number;
+  month: number;
+  year: number;
+  subscription: string;
+  instaId: string;
+  phone: string;
+  image: string;
 }
-
-const fakeProfiles: Profile[] = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    age: 28,
-    location: "New York, NY",
-    bio: "Adventure seeker and coffee enthusiast. Let's explore the city together!",
-    photos: [
-      "https://images.unsplash.com/photo-1515202913167-d9a698095ebf?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjN8fHByb2ZpbGV8ZW58MHx8MHx8fDA%3D",
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvPjv1lHEIpzgDk_e3Sm-e4EVOzggYdb5aHA&s",
-    ],
-    workplace: "Creative Agency",
-    college: "NYU",
-    drink: "Socially",
-    smoke: "No",
-    religion: "Spiritual",
-    relationshipType: "Looking for relationship",
-  },
-  {
-    id: 2,
-    name: "Mike Chen",
-    age: 32,
-    location: "San Francisco, CA",
-    bio: "Tech geek by day, foodie by night. Always up for trying new restaurants!",
-    photos: [
-      "https://plus.unsplash.com/premium_photo-1679750867619-6f6e57fc8762?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjV8fHByb2ZpbGV8ZW58MHx8MHx8fDA%3D",
-      "/api/placeholder/400/600?text=Mike2",
-    ],
-    workplace: "Tech Startup",
-    college: "Stanford",
-    drink: "Occasionally",
-    smoke: "No",
-    religion: "Agnostic",
-    relationshipType: "Casual dating",
-  },
-  {
-    id: 3,
-    name: "Emma Thompson",
-    age: 25,
-    location: "Austin, TX",
-    bio: "Music lover and outdoor enthusiast. Let's jam and hike together!",
-    photos: [
-      "https://images.unsplash.com/photo-1506863530036-1efeddceb993?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjJ8fHByb2ZpbGV8ZW58MHx8MHx8fDA%3D",
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSc4OF5kmXwED6vNEFhNx6INslf8KxsFQ2LrA&s",
-    ],
-    workplace: "Music Venue",
-    college: "UT Austin",
-    drink: "Yes",
-    smoke: "No",
-    religion: "Christian",
-    relationshipType: "Looking for adventure",
-  },
-  {
-    id: 4,
-    name: "David Kim",
-    age: 29,
-    location: "Seattle, WA",
-    bio: "Coffee connoisseur and board game aficionado. Let's brew some coffee and play!",
-    photos: [
-      "https://plus.unsplash.com/premium_photo-1673866484792-c5a36a6c025e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cHJvZmlsZXxlbnwwfHwwfHx8MA%3D%3D",
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSH30Lu5Wavq9g5qFkFeh3FhxH9YdJ4PZb6ww&s",
-    ],
-    workplace: "Board Game Café",
-    college: "UW",
-    drink: "Moderately",
-    smoke: "No",
-    religion: "Buddhist",
-    relationshipType: "Serious relationship",
-  },
-  {
-    id: 5,
-    name: "Olivia Martinez",
-    age: 27,
-    location: "Chicago, IL",
-    bio: "Foodie and art lover. Let's discover new restaurants and galleries!",
-    photos: [
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTR8fHByb2ZpbGV8ZW58MHx8MHx8fDA%3D",
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxiYtu7-oGNy_DZIKWXV0G9Y43N9EY1t68Og&s",
-    ],
-    workplace: "Art Gallery",
-    college: "DePaul University",
-    drink: "Yes",
-    smoke: "No",
-    religion: "Spiritual",
-    relationshipType: "Looking for fun",
-  },
-  {
-    id: 6,
-    name: "Liam Smith",
-    age: 30,
-    location: "Miami, FL",
-    bio: "Beach lover and fitness enthusiast. Let's hit the gym and the waves!",
-    photos: [
-      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTV8fHByb2ZpbGV8ZW58MHx8MHx8fDA%3D",
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQeA5s85L7z5Ra0FSQs8V66D15Wm0ptzPhgLg&s",
-    ],
-    workplace: "Gym",
-    college: "FIU",
-    drink: "Occasionally",
-    smoke: "No",
-    religion: "Agnostic",
-    relationshipType: "Looking for fitness partner",
-  },
-];
 
 const SWIPE_THRESHOLD = 120;
 const TOP_MARGIN = 100;
 
+const calculateAge = (day: number, month: number, year: number): number => {
+  const today = new Date();
+  const birthDate = new Date(year, month - 1, day); // Month is 0-indexed in JavaScript Date object
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  const dayDiff = today.getDate() - birthDate.getDate();
+  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+    age--;
+  }
+
+  return age;
+};
+
 export default (): JSX.Element => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [profiles, setProfiles] = useState(fakeProfiles);
-  const [likedProfiles, setLikedProfiles] = useState<number[]>([1]);
-  const [noMoreProfiles, setNoMoreProfiles] = useState(false); // New state for no profiles
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [likedProfiles, setLikedProfiles] = useState([]);
+  const email = useAtomValue(emailAtom);
   const position = useRef(
     new Animated.ValueXY({ x: 0, y: TOP_MARGIN }),
   ).current;
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(
+          `${process.env.EXPO_PUBLIC_API}/get-recommendations`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email }),
+          },
+        );
+
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+        const data = await res.json();
+        const recommendations = data.recommendations;
+        console.log("Recommendations:", recommendations);
+        console.log(recommendations[0].image);
+        setProfiles(recommendations);
+
+        return recommendations;
+      } catch (error) {
+        throw error;
+      }
+    })();
+  }, []);
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (): true => true,
@@ -205,11 +150,12 @@ export default (): JSX.Element => {
     position.setValue({ x: 0, y: TOP_MARGIN });
   };
 
-  const handleLike = (profileId: number) => {
-    setLikedProfiles((prev: number[]): number[] => [...prev, profileId]);
+  const handleLike = (profileId: any) => {
+    //@ts-expect-error: W T F
+    setLikedProfiles((prev) => [...prev, profileId]);
   };
 
-  const renderCard = (profile: any, index: any): JSX.Element | null => {
+  const renderCard = (profile: Profile, index: number): JSX.Element | null => {
     if (index >= 2) return null;
 
     const isFirst = index === 0;
@@ -236,7 +182,7 @@ export default (): JSX.Element => {
       { icon: "🍷", label: "Drinks", value: profile.drink },
       { icon: "🚬", label: "Smokes", value: profile.smoke },
       { icon: "🙏", label: "Religion", value: profile.religion },
-      { icon: "💑", label: "Looking for", value: profile.relationshipType },
+      { icon: "💑", label: "Looking for", value: profile.relationshiptype },
     ];
 
     return (
@@ -246,14 +192,16 @@ export default (): JSX.Element => {
         {...panHandlers}
       >
         <ScrollView>
-          <Image source={{ uri: profile.photos[0] }} style={styles.image} />
+          <Image source={{ uri: profile.image }} style={styles.image} />
           <View style={styles.cardContent}>
             <Text style={styles.name}>
-              {profile.name}, {profile.age}
+              {profile.name},{" "}
+              {calculateAge(profile.date, profile.month, profile.year)}
             </Text>
             <Text style={styles.location}>{profile.location}</Text>
             <Text style={styles.bio}>{profile.bio}</Text>
 
+            {/*@ts-expect-error: W T F*/}
             {likedProfiles.includes(profile.id) && (
               <Text style={styles.likedMessage}>
                 {profile.name} has liked your profile

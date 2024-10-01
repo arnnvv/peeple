@@ -42,7 +42,7 @@ export const pictures = createTable("pictures", {
   email: varchar("email")
     .references(() => users.email)
     .notNull(),
-  url: varchar("url", { length: 5000 }).notNull(),
+  url: varchar("url").notNull(),
 });
 
 export const likes = createTable("likes", {
@@ -90,10 +90,11 @@ export const userpreferences = createTable("userpreferences", {
   maxdistance: integer("maxdistance"),
 });
 
-
 export const profileImages = createTable("profileImages", {
   id: serial("id").primaryKey(),
-  email: varchar("email").references(() => users.email).notNull(),
+  email: varchar("email")
+    .references(() => users.email)
+    .notNull(),
   url: varchar("url", { length: 255 }).notNull(),
   imageName: varchar("name", { length: 255 }).notNull(),
   imageNo: integer("imageNo").notNull(),
