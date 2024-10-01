@@ -136,6 +136,7 @@ export default (): JSX.Element => {
         cardIndex={0}
         backgroundColor={"#f2f2f2"}
         stackSize={3}
+        verticalSwipe={false}
       />
     </View>
   );
