@@ -6,9 +6,14 @@ import { eq } from "drizzle-orm";
 import { createTransport, SentMessageInfo } from "nodemailer";
 import jwt from "jsonwebtoken";
 import { v4 } from "uuid";
+<<<<<<< Updated upstream
 import chalk from 'chalk';  // Import chalk for colored logs
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+||||||| Stash base
+=======
+import { getEmail, getReccomendations } from "../lib/helpers";
+>>>>>>> Stashed changes
 
 const app = e();
 const port: number = 3000;
@@ -18,7 +23,7 @@ const logWithColor = (message: string, color: string = "\x1b[37m") => {
 };
 
 // Secret environment variables
-const getJWTSECRET = (): string =>
+export const getJWTSECRET = (): string =>
   process.env.JWT_SECRET ??
   ((): never => {
     logWithColor("JWT_SECRET is missing!", "\x1b[31m"); // Red
@@ -55,12 +60,6 @@ setInterval(() => {
   logWithColor("Clearing OTP memory", "\x1b[33m"); // Yellow
   dummyusers = {};
 }, 3600000); // 1 hour
-
-// Health Check
-app.get("/", (req: Request, res: Response) => {
-  logWithColor("GET / - Server health check", "\x1b[36m"); // Cyan
-  res.json({ message: "Server is running" });
-});
 
 // Check if email exists
 app.post("/check-email", async (req: Request, res: Response) => {
@@ -167,24 +166,17 @@ app.post("/verify-otp", (req: Request, res: Response) => {
   }
 });
 
-// Verify token
 app.post("/verify-token", (req: Request, res: Response) => {
-  logWithColor("POST /verify-token - Request received", "\x1b[36m"); // Cyan
-  const token = req.headers["authorization"]?.split(" ")[1];
-  logWithColor(`Received token: ${token}`, "\x1b[33m"); // Yellow
-
-  if (!token) {
-    logWithColor("No token provided", "\x1b[31m"); // Red
-    res.status(401).json({ error: "Token missing" });
-    return;
-  }
-
   try {
-    const decoded = jwt.verify(token, getJWTSECRET());
-    logWithColor(`Token verified, decoded email: ${decoded}`, "\x1b[32m"); // Green
-    res.status(200).json({ email: decoded });
-  } catch (e) {
-    logWithColor(`Token verification failed: ${e}`, "\x1b[31m"); // Red
+    const token = req.headers["authorization"]?.split(" ")[1];
+    console.log(token);
+    console.log("ibi");
+    const email = getEmail(token);
+    console.log("got Email");
+    if (email) {
+      res.status(200).json({ email });
+    } else return;
+  } catch {
     res.status(401).json({ error: "Invalid token" });
   }
 });
@@ -229,7 +221,7 @@ app.post("/get-user-from-token", async (req: Request, res: Response) => {
 app.post("/user-form-email", async (req: Request, res: Response) => {
   console.log("Android req Received");
   const { email } = req.body;
-  console.log(req.body, "HI");
+  console.log(req.body);
   try {
     console.log("try");
     const user = (
@@ -306,6 +298,7 @@ app.post("/create-user", async (req: Request, res: Response) => {
   }
 });
 
+<<<<<<< Updated upstream
 
 
 
@@ -441,6 +434,19 @@ app.post('/generate-url', async (req, res) => {
   }
 });
 
+||||||| Stash base
+=======
+app.post("get-reccomendations", async (req: Request, res: Response) => {
+  const { email } = req.body;
+  try {
+    const reccomendations = await getReccomendations(email);
+    res.json({ reccomendations });
+  } catch (e) {
+    throw new Error(`${e}`);
+  }
+});
+
+>>>>>>> Stashed changes
 app.listen(port, () => {
   logWithColor(`Server listening on port ${port}`, "\x1b[32m"); // Green
 });

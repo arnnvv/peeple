@@ -62,7 +62,7 @@ export default (): JSX.Element => {
                 "\x1b[32m",
               ); // Green
               console.log(data2);
-              const email = data2.email.email;
+              const email = data2.email;
               logWithColor(`Email extracted: ${email}`, "\x1b[36m"); // Cyan
 
               const exists = await userExists(email);

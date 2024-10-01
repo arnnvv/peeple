@@ -17,9 +17,10 @@ import {
 } from "expo-image-picker";
 import { useLogout } from "@/lib/useLogout";
 import { User } from "./../../../../api/lib/db/schema";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getCityFromCoordinates } from "@/lib/cutyName";
 import { useUser } from "@clerk/clerk-expo";
+import { getEmail } from "@/lib/getEmail";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default (): JSX.Element => {
   const [editing, setEditing] = useState(false);
@@ -28,6 +29,7 @@ export default (): JSX.Element => {
   const handleLogout = useLogout();
   const { user } = useUser();
   let cityName;
+  console.log("st");
 
   useEffect(() => {
     (async () => {

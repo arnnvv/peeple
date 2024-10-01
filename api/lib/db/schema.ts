@@ -42,7 +42,13 @@ export const pictures = createTable("pictures", {
   email: varchar("email")
     .references(() => users.email)
     .notNull(),
+<<<<<<< Updated upstream
   url: varchar("url", { length: 5000 }).notNull(),
+||||||| Stash base
+  url: varchar("url", { length: 255 }).notNull(),
+=======
+  url: varchar("url").notNull(),
+>>>>>>> Stashed changes
 });
 
 export const likes = createTable("likes", {
