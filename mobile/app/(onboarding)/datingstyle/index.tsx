@@ -25,6 +25,8 @@ import {
   dateAtom,
   monthAtom,
   yearAtom,
+  instaAtom,
+  phoneAtom,
 } from "@/lib/atom";
 
 export type RelationshipPreference = "casual" | "serious";
@@ -46,6 +48,8 @@ export default function RelationshipPreference(): JSX.Element {
   const date = useAtomValue(dateAtom);
   const month = useAtomValue(monthAtom);
   const year = useAtomValue(yearAtom);
+  const instaId = useAtomValue(instaAtom);
+  const phone = useAtomValue(phoneAtom);
 
   const handleSelectPreference = useCallback(
     (selected: string) => {
@@ -82,10 +86,12 @@ export default function RelationshipPreference(): JSX.Element {
       date,
       month,
       year,
+      instaId,
+      phone,
     };
 
     try {
-      const response = await fetch("http://10.61.39.212:3000/create-user", {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/create-user`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

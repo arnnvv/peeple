@@ -5,6 +5,8 @@ import * as Location from "expo-location";
 import { atom } from "jotai";
 
 export const nameAtom = atom<string>("");
+export const instaAtom = atom<string>("");
+export const phoneAtom = atom<string>("");
 export const emailAtom = atom<string>("");
 export const locationAtom = atom<Location.LocationObject>();
 export const genderAtom = atom<"male" | "female" | "">("");

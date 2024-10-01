@@ -293,6 +293,8 @@ app.post("/create-user", async (req: Request, res: Response) => {
         date: user.date,
         month: user.month,
         year: user.year,
+        instaId: user.instaId,
+        phone: user.phone,
       })
       .where(eq(users.email, user.email));
 
@@ -306,51 +308,22 @@ app.post("/create-user", async (req: Request, res: Response) => {
 
 
 
-// Define your route with correct typings
-app.get('/profile-images/:email', async (req: Request, res: Response) => {
-  const { email } = req.params;
 
-  // Log the incoming request email
-  console.log(chalk.blue(`Received request for profile images with email: ${email}`));
-
-  try {
-    const images = await db
-      .select()
-      .from(profileImages)
-      .where(eq(profileImages.email, email));
-
-    if (images.length === 0) {
-      console.log(chalk.yellow(`No images found for user with email: ${email}`));
-      res.status(404).json({ message: 'No images found for this user' });
-    }
-
-    // Log the images being sent back
-    console.log(chalk.green(`Found images for email: ${email}. Sending response:`));
-    console.log(chalk.green(JSON.stringify(images, null, 2)));
-
-    res.json(images);
-  } catch (error) {
-    console.error(chalk.red('Error fetching profile images:', error));
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // 
 
 app.post('/profile-images', async (req: Request, res: Response) => {
-  const { email, url, imageName, imageNo } = req.body;
-
+  const { email, url } = req.body;
+  console.log(`email ki behen ki chut ${email}`);
   // Log incoming request body
   console.log(chalk.blue('Received POST request for /profile-images with the following data:'));
   console.log(chalk.blue(JSON.stringify(req.body, null, 2)));
 
   // Field validation logging
-  if (!email || !url || !imageName || !imageNo) {
+  if (!email || !url) {
     console.log(chalk.yellow('Missing fields in request body:'));
     if (!email) console.log(chalk.yellow('Missing email'));
     if (!url) console.log(chalk.yellow('Missing URL'));
-    if (!imageName) console.log(chalk.yellow('Missing imageName'));
-    if (!imageNo) console.log(chalk.yellow('Missing imageNo'));
 
     res.status(400).json({ error: 'All fields are required' });
   }
@@ -359,11 +332,10 @@ app.post('/profile-images', async (req: Request, res: Response) => {
     console.log(chalk.green('Inserting new image into the database...'));
 
     // Insert new image record
-    const newImage = await db.insert(profileImages).values({
+    const newImage = await db.insert(pictures).values({
       email,
       url,
-      imageName,
-      imageNo,
+
     });
 
     console.log(chalk.green('Image inserted successfully into the database'));
@@ -397,83 +369,74 @@ const s3 = new S3Client({
 });
 
 
-
 // POST route for uploading image to S3
 app.post('/upload-image', async (req, res) => {
-  console.log("ayush");
   const { filename } = req.body;
 
-
-  logWithColor(`Starting image upload for: ${filename}`, "\x1b[34m");
+  logWithColor(`🚀 Starting the upload process for image: "${filename}"`, "\x1b[34m"); // Blue
 
   try {
-    logWithColor(`Creating command to upload image to S3...`, "\x1b[34m");
+    logWithColor(`📦 Preparing to upload the image to S3 with filename: "${filename}"`, "\x1b[34m"); // Blue
 
     const command = new PutObjectCommand({
-      Bucket: "peeple",          // Your S3 bucket name
-      Key: `uploads/${filename}`, // Path in S3 where the file will be stored
+      Bucket: "peeple",
+      Key: `uploads/${filename}`,
       ContentType: "image/jpeg",
     });
 
-    // Generate a signed URL for uploading
-    logWithColor(`Getting signed URL for upload...`, "\x1b[34m");
+    logWithColor(`🔗 Generating a signed URL for the image upload...`, "\x1b[34m"); // Blue
 
     try {
       const uploadUrl = await getSignedUrl(s3, command);
-      logWithColor(`Signed URL for uploading: ${uploadUrl}`, "\x1b[35m");
+      logWithColor(`✅ Successfully generated the upload URL for "${filename}":\n${uploadUrl}`, "\x1b[35m"); // Magenta
 
       res.status(200).json({ message: 'Upload URL generated successfully', uploadUrl });
     } catch (error: any) {
-      logWithColor(`Error getting signed URL: ${error.message}`, "\x1b[31m"); // Red color for errors
+      logWithColor(`❌ Failed to generate upload URL for "${filename}". Error: ${error.message}`, "\x1b[31m"); // Red
       res.status(500).json({ error: 'Error generating signed URL', details: error.message });
     }
   } catch (error: any) {
-    logWithColor(`Error in uploadImageToS3: ${error.message}`, "\x1b[31m"); // Red color for errors
+    logWithColor(`❌ Something went wrong during the upload initiation for "${filename}". Error: ${error.message}`, "\x1b[31m"); // Red
     res.status(500).json({ error: 'Failed to initiate image upload', details: error.message });
   }
 });
 
-// generate image seeing url
+// POST route for generating image viewing URL
 app.post('/generate-url', async (req, res) => {
   const { filename } = req.body;
 
-  // Logging the filename being processed
-  logWithColor(`Received request to generate URL for filename: ${filename}`, "\x1b[36m"); // Cyan
+  logWithColor(`🔍 Received a request to generate a viewing URL for the image: "${filename}"`, "\x1b[36m"); // Cyan
 
   if (!filename) {
-    logWithColor('Filename not provided in request body', "\x1b[31m"); // Red
+    logWithColor('❌ No filename was provided in the request.', "\x1b[31m"); // Red
     res.status(400).json({ error: 'Filename is required' });
   }
 
   try {
-    // Define function to get the signed URL
     const getObjectURL = async (key: string) => {
+      logWithColor(`🌐 Generating signed URL for image key: "${key}"`, "\x1b[36m"); // Cyan
+
       try {
-        logWithColor(`Generating signed URL for object key: ${key}`, "\x1b[36m"); // Cyan
-        const command = new GetObjectCommand({
-          Bucket: "peeple", // Replace with your actual bucket name
+        const url = await getSignedUrl(s3, new GetObjectCommand({
+          Bucket: "peeple",
           Key: key,
-        });
-
-        const url = await getSignedUrl(s3, command);
-        logWithColor(`Generated signed URL: ${url}`, "\x1b[36m"); // Cyan
+        }));
+        logWithColor(`🔗 Successfully generated viewing URL for "${filename}":\n${url}`, "\x1b[35m"); // Magenta
         return url;
-
-      } catch (e: any) {
-        logWithColor(`Error in getObjectURL: ${e.message} for key: ${key}`, "\x1b[31m"); // Red
-        throw e;
+      } catch (error: any) {
+        logWithColor(`❌ Error occurred while generating viewing URL for "${filename}": ${error.message}`, "\x1b[31m"); // Red
+        throw error;
       }
     };
 
-    // Use the function to get the URL for the filename passed in the request body
     const key = `uploads/${filename}`;
     const url = await getObjectURL(key);
 
-    logWithColor(`Uploaded image URL: ${url}`, "\x1b[35m"); // Magenta
+    logWithColor(`✅ Viewing URL generation for "${filename}" is complete.`, "\x1b[35m"); // Magenta
     res.json({ filename, url });
 
   } catch (error: any) {
-    logWithColor(`Error in generating URL: ${error.message}`, "\x1b[31m"); // Red
+    logWithColor(`❌ Failed to generate viewing URL for "${filename}". Error: ${error.message}`, "\x1b[31m"); // Red
     res.status(500).json({ error: 'Failed to generate URL' });
   }
 });

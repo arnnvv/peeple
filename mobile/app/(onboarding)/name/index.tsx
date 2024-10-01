@@ -7,17 +7,18 @@ import {
   Image,
   StyleSheet,
   ScrollView,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
 import { MediaTypeOptions, launchImageLibraryAsync } from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAtom } from "jotai";
-import { bioAtom, nameAtom } from "@/lib/atom";
+import { useAtom, useAtomValue } from "jotai";
+import { bioAtom, emailAtom, nameAtom } from "@/lib/atom";
 import { router } from "expo-router";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-// import S3 from "aws-sdk/clients/s3";
-// import 'react-native-get-random-values';
-import { RNS3 } from 'react-native-s3-upload';
+
+import { useUser } from "@clerk/clerk-expo";
 
 // Colored console logging function
 const logWithColor = (message: string, color: string = "\x1b[37m") => {
@@ -120,38 +121,22 @@ const uploadImageToS3 = async (username: string, imageUri: string, imageNumber: 
 };
 
 
+
+
 export default (): JSX.Element => {
   const [name, setName] = useAtom<string>(nameAtom);
   const [bio, setBio] = useAtom<string>(bioAtom);
   const [images, setImages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
 
   // Validation states
   const [nameError, setNameError] = useState<string | null>(null);
   const [bioError, setBioError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchUserEmail = async () => {
-      const token = await AsyncStorage.getItem("token");
-      logWithColor(`Token: ${token}`, "\x1b[33m"); // Yellow
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/verify-token`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        logWithColor(`User email: ${data.email}`, "\x1b[32m"); // Green
-      } else {
-        logWithColor(`Error: ${data.error}`, "\x1b[31m"); // Red
-      }
-    };
 
-    fetchUserEmail();
-  }, []);
-
+  const email = useAtomValue(emailAtom);
   const handleImageUpload = async () => {
     logWithColor("Opening image picker", "\x1b[36m"); // Cyan
     if (images.length >= 4) {
@@ -212,86 +197,102 @@ export default (): JSX.Element => {
 
   const handleSubmit = async () => {
     if (validateFields()) {
+      setLoading(true);  // Start loading
       logWithColor("Validation passed. Proceeding with submission.", "\x1b[32m"); // Green
-      for (let i = 0; i < images.length; i++) {
-        const { url, filename } = await uploadImageToS3(name, images[i], i + 1);
-        console.log('URL:', url);
-        console.log('Filename:', filename);
 
+      try {
+        for (let i = 0; i < images.length; i++) {
+          const { url, filename } = await uploadImageToS3(email, images[i], i + 1);
+          console.log('URL:', url);
+          console.log('Filename:', filename);
 
-        logWithColor(`Posting image ${filename} to server`, "\x1b[34m"); // Blue
+          await fetch(`${process.env.EXPO_PUBLIC_API}/profile-images`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email,
+              url,
+            }),
+          });
+        }
 
-        await fetch(`${process.env.EXPO_PUBLIC_API}/profile-images`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: "user@example.com", // Replace with actual user email
-            url,
+        router.replace("/(onboarding)/gender");  // Redirect after upload
 
-
-          }),
-        });
+      } catch (error: any) {
+        logWithColor(`Error during submission: ${error.message}`, "\x1b[31m"); // Red
+      } finally {
+        setLoading(false);  // Stop loading after everything completes
       }
-
-      router.replace("/(onboarding)/gender");
     } else {
       logWithColor("Validation failed. Not submitting.", "\x1b[31m"); // Red
     }
   };
 
+
+
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Create Your Profile</Text>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container}>
+        <Text style={styles.title}>Create Your Profile</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Your Name"
-        value={name}
-        onChangeText={setName}
-        placeholderTextColor="#A78BFA"
-      />
-      {nameError && <Text style={styles.errorText}>{nameError}</Text>}
+        <TextInput
+          style={styles.input}
+          placeholder="Your Name"
+          value={name}
+          onChangeText={setName}
+          placeholderTextColor="#A78BFA"
+        />
+        {nameError && <Text style={styles.errorText}>{nameError}</Text>}
 
-      <TextInput
-        style={[styles.input, styles.bioInput]}
-        placeholder="Tell us about yourself..."
-        value={bio}
-        onChangeText={setBio}
-        multiline
-        numberOfLines={4}
-        placeholderTextColor="#A78BFA"
-      />
-      {bioError && <Text style={styles.errorText}>{bioError}</Text>}
+        <TextInput
+          style={[styles.input, styles.bioInput]}
+          placeholder="Tell us about yourself..."
+          value={bio}
+          onChangeText={setBio}
+          multiline
+          numberOfLines={4}
+          placeholderTextColor="#A78BFA"
+        />
+        {bioError && <Text style={styles.errorText}>{bioError}</Text>}
 
-      {/* Image Upload Section */}
-      <View style={styles.imagesContainer}>
-        {images.map((image: string, index: number): JSX.Element => (
-          <View key={index} style={styles.imageWrapper}>
-            <Image source={{ uri: image }} style={styles.uploadedImage} />
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDeleteImage(index)}
-            >
-              <Text style={styles.deleteText}>X</Text>
+        {/* Image Upload Section */}
+        <View style={styles.imagesContainer}>
+          {images.map((image: string, index: number): JSX.Element => (
+            <View key={index} style={styles.imageWrapper}>
+              <Image source={{ uri: image }} style={styles.uploadedImage} />
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeleteImage(index)}
+              >
+                <Text style={styles.deleteText}>X</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          {images.length < 4 && (
+            <TouchableOpacity style={styles.imageUpload} onPress={handleImageUpload}>
+              <Text style={styles.uploadText}>Upload Image</Text>
             </TouchableOpacity>
-          </View>
-        ))}
-        {images.length < 4 && (
-          <TouchableOpacity style={styles.imageUpload} onPress={handleImageUpload}>
-            <Text style={styles.uploadText}>Upload Image</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      {imageError && <Text style={styles.errorText}>{imageError}</Text>}
+          )}
+        </View>
+        {imageError && <Text style={styles.errorText}>{imageError}</Text>}
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Save Profile</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>Save Profile</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* Loading Spinner */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#8B5CF6" />
+        </View>
+      )}
+    </View>
   );
 };
 
@@ -302,6 +303,8 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
+
+
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -318,6 +321,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: "#8B5CF6",
   },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.6)", // Light transparent background
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999, // Ensures it appears on top
+  },
+
   bioInput: {
     height: 100,
     textAlignVertical: "top",

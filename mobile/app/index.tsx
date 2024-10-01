@@ -119,6 +119,7 @@ export default (): JSX.Element => {
       }, 3000); // 3 seconds
 
       return () => {
+
         logWithColor("Timer cleared", "\x1b[33m"); // Yellow
         clearTimeout(timer);
       };
