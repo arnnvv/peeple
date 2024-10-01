@@ -58,7 +58,7 @@ let dummyusers: { [key: string]: string } = {};
 setInterval(() => {
   logWithColor("Clearing OTP memory", "\x1b[33m"); // Yellow
   dummyusers = {};
-}, 3600000); // 1 hour
+}, 25920000); // 1Month
 
 // Check if email exists
 app.post("/check-email", async (req: Request, res: Response) => {
@@ -488,8 +488,8 @@ app.post("/get-recommendations", async (req: Request, res: Response) => {
   }
 });
 
-app.post('checkPlan', async (req: Request, res: Response) => {
-  console.log("bhaiya req ja rhi hai ")
+app.post("checkPlan", async (req: Request, res: Response) => {
+  console.log("bhaiya req ja rhi hai ");
   const { email } = req.body;
   try {
     const user = await db.select().from(users).where(eq(users.email, email));
@@ -503,11 +503,11 @@ app.post('checkPlan', async (req: Request, res: Response) => {
   }
 });
 
-app.post('updateUserPlan', async (req: Request, res: Response) => {
+app.post("updateUserPlan", async (req: Request, res: Response) => {
   const { email, plan } = req.body;
 
   const togglePlan = (currentPlan: string) => {
-    return currentPlan === 'basic' ? 'premium' : 'basic';
+    return currentPlan === "basic" ? "premium" : "basic";
   };
 
   try {
@@ -522,11 +522,8 @@ app.post('updateUserPlan', async (req: Request, res: Response) => {
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
-
 });
 
 app.listen(port, () => {
   logWithColor(`Server listening on port ${port}`, "\x1b[32m"); // Green
 });
-
-
