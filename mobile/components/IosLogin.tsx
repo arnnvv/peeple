@@ -30,7 +30,7 @@ export default (): JSX.Element => {
       return;
     }
     try {
-      const response = await fetch("http://10.61.39.212:3000/send-otp", {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/send-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

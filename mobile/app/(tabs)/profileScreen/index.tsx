@@ -34,7 +34,7 @@ export default (): JSX.Element => {
       if (Platform.OS === "ios") {
         const token = await AsyncStorage.getItem("token");
         const res = await fetch(
-          "http://10.61.39.212:3000/get-user-from-token",
+          `${process.env.EXPO_PUBLIC_API}/get-user-from-token`,
           {
             method: "POST",
             headers: {
@@ -64,7 +64,7 @@ export default (): JSX.Element => {
       } else {
         const email = user?.emailAddresses[0].emailAddress;
         console.log(email, "says ih");
-        const res = await fetch("http://10.61.39.212:3000/user-form-email", {
+        const res = await fetch(`${process.env.EXPO_PUBLIC_API}user-form-email`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

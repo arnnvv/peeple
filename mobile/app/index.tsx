@@ -11,16 +11,23 @@ import { userExists } from "@/lib/checkUser";
 const logWithColor = (message: string, color: string = "\x1b[37m") => {
   console.log(`${color}%s\x1b[0m`, message);
 };
+// const getH = (): string => process.env.H ?? ((): never => { throw new Error("H not found"); })();
 
 export default (): JSX.Element => {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const router = useRouter();
   const [emaill, setEmaill] = useAtom(emailAtom);
+  // logWithColor(${getH()} hello, "\x1b[36m"); // Cyan
 
   useEffect((): (() => void) | undefined => {
+    logWithColor(`${process.env.EXPO_PUBLIC_API} hii`, "\x1b[36m"); // Cyan
+    logWithColor(`${process.env.EXPO_PUBLIC_H} hello`, "\x1b[36m"); // Cyan
+
     if (isLoaded) {
       logWithColor("isLoaded is true", "\x1b[32m"); // Green
+
+
 
       const timer = setTimeout(async () => {
         logWithColor("Timer triggered after 3 seconds", "\x1b[36m"); // Cyan
@@ -33,7 +40,7 @@ export default (): JSX.Element => {
             logWithColor(`Token found: ${token}`, "\x1b[32m"); // Green
             logWithColor("Sending token for verification", "\x1b[33m"); // Yellow
 
-            const res = await fetch("http://10.61.39.212:3000/verify-token", {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API}/verify-token`, {
               method: "POST",
               headers: {
                 Authorization: `Bearer ${token}`, // Send the token in the Authorization header
@@ -89,7 +96,7 @@ export default (): JSX.Element => {
 
               const exists = await userExists(email);
               logWithColor(
-                `Email exists check result: ${exists}`,
+                `User exists check result: ${exists}`,
                 exists ? "\x1b[32m" : "\x1b[33m",
               ); // Green or Yellow
 
@@ -112,6 +119,7 @@ export default (): JSX.Element => {
       }, 3000); // 3 seconds
 
       return () => {
+
         logWithColor("Timer cleared", "\x1b[33m"); // Yellow
         clearTimeout(timer);
       };

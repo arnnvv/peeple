@@ -28,7 +28,7 @@ export default (): JSX.Element => {
 
   const onPress = useCallback(async () => {
     try {
-      const response = await fetch("http://10.61.39.212:3000/verify-otp", {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/verify-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

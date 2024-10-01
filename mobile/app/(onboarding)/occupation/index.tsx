@@ -72,7 +72,7 @@ export default (): JSX.Element => {
       feild: occupationText, // Save the occupation/field entered by the user
       area: selectedOption as "student" | "professional", // Save the selected option
     });
-    router.replace("/(onboarding)/datingstyle");
+    router.replace("/(onboarding)/contact");
   };
 
   const getPlaceholderText = () => {

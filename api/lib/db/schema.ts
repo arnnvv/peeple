@@ -31,6 +31,8 @@ export const users = createTable("users", {
   month: integer("month"),
   year: integer("year"),
   subscription: varchar("subscription"),
+  instaId: varchar("instaid"),
+  phone: varchar("phone"),
 });
 
 export type User = typeof users.$inferSelect;
@@ -40,7 +42,7 @@ export const pictures = createTable("pictures", {
   email: varchar("email")
     .references(() => users.email)
     .notNull(),
-  url: varchar("url", { length: 255 }).notNull(),
+  url: varchar("url", { length: 5000 }).notNull(),
 });
 
 export const likes = createTable("likes", {
@@ -86,4 +88,13 @@ export const userpreferences = createTable("userpreferences", {
   genderpreference: jsonb("genderpreference"),
   relationshiptypepreference: jsonb("relationshiptypepreference"),
   maxdistance: integer("maxdistance"),
+});
+
+
+export const profileImages = createTable("profileImages", {
+  id: serial("id").primaryKey(),
+  email: varchar("email").references(() => users.email).notNull(),
+  url: varchar("url", { length: 255 }).notNull(),
+  imageName: varchar("name", { length: 255 }).notNull(),
+  imageNo: integer("imageNo").notNull(),
 });
