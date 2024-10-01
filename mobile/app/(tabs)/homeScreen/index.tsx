@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -31,7 +31,7 @@ export default (): JSX.Element => {
   const heartOpacity = useSharedValue(0); // To control the heart's visibility
 
   useEffect(() => {
-    const fetchRecommendations = async () => {
+    (async (): Promise<void> => {
       console.log("\x1b[34m[Fetching] Requesting recommendations for:", email);
       try {
         const res = await fetch(
@@ -44,6 +44,35 @@ export default (): JSX.Element => {
             body: JSON.stringify({ email }),
           },
         );
+
+        const likesRes = await fetch(
+          `${process.env.EXPO_PUBLIC_API}/get-likes-received`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email }), // Assuming you send the user's email to get their received likes
+          },
+        );
+
+        if (!likesRes.ok) {
+          console.log(`\x1b[31m[Error] HTTP error! status: ${likesRes.status}`);
+          throw new Error(`HTTP error! status: ${likesRes.status}`);
+        }
+
+        const likesData = await likesRes.json();
+        const likedEmails = likesData.likedBy || []; // Get the emails of users who liked the current user
+
+        // Prioritize recommendations: those who liked you first
+        const prioritizedRecommendations = [
+          ...recommendations.filter((rec: any) =>
+            likedEmails.includes(rec.email),
+          ), // Show who liked you first
+          ...recommendations.filter(
+            (rec: any) => !likedEmails.includes(rec.email),
+          ), // Then show others
+        ];
 
         if (!res.ok) {
           console.log(`\x1b[31m[Error] HTTP error! status: ${res.status}`);
@@ -62,26 +91,47 @@ export default (): JSX.Element => {
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchRecommendations();
+    })();
   }, [email]);
 
   // Trigger heart animation on right swipe
-  const handleSwipeRight = () => {
+  const handleSwipeRight = async (likedEmail: string) => {
     heartOpacity.value = 1; // Show heart
     heartOpacity.value = withTiming(0, { duration: 500 }); // Fade out heart after 500ms
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/add-like`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          likerEmail: email,
+          likedEmail,
+        }),
+      });
+
+      // Check if the response is successful
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+
+      const data = await response.json();
+      console.log("Like added successfully:", data);
+    } catch (error) {
+      console.error("Error adding like:", error);
+    }
   };
 
   // Animated heart style
-  const heartStyle = useAnimatedStyle(() => {
-    return {
-      opacity: heartOpacity.value,
-      transform: [{ scale: withTiming(heartOpacity.value === 1 ? 1.5 : 1) }],
-    };
-  });
+  const heartStyle = useAnimatedStyle(
+    (): { opacity: number; transform: { scale: 1 | 1.5 }[] } => {
+      return {
+        opacity: heartOpacity.value,
+        transform: [{ scale: withTiming(heartOpacity.value === 1 ? 1.5 : 1) }],
+      };
+    },
+  );
 
-  const renderCard = (card: any) => {
+  const renderCard = (card: any): JSX.Element | null => {
     if (!card) return null;
 
     // Use real place text instead of coordinates, if available
@@ -135,38 +185,46 @@ export default (): JSX.Element => {
     );
   };
 
-  const renderNoMoreCards = () => {
+  const renderNoMoreCards = (): JSX.Element => {
     return (
       <View style={styles.noMoreCardsContainer}>
-        <Text style={styles.noMoreCardsText}>🎉 All profiles are swiped! 🎉</Text>
-        <Text style={styles.noMoreCardsSubText}>Come back later for more recommendations.</Text>
+        <Text style={styles.noMoreCardsText}>
+          🎉 All profiles are swiped! 🎉
+        </Text>
+        <Text style={styles.noMoreCardsSubText}>
+          Come back later for more recommendations.
+        </Text>
         <Ionicons name="happy-outline" size={50} color="#8B5CF6" />
       </View>
     );
   };
 
-  if (loading) {
+  if (loading)
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#8B5CF6" />
       </View>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>Error: {error}</Text>
       </View>
     );
-  }
+
+  const onSwipedRight = (cardIndex: any) => {
+    //@ts-expect-error: W T F
+    const likedEmail = recommendations[cardIndex].email; // Get the liked user's email from the recommendations array
+    handleSwipeRight(likedEmail); // Call handleSwipeRight with the liked email
+  };
 
   return (
     <View style={styles.container}>
       <Swiper
         cards={recommendations}
         renderCard={renderCard}
-        onSwipedRight={handleSwipeRight} // Handle swipe right
+        onSwipedRight={onSwipedRight} // Handle swipe right
         onSwiped={(cardIndex: number) => console.log(cardIndex)}
         onSwipedAll={() => {
           console.log("onSwipedAll");
@@ -272,6 +330,6 @@ const styles = StyleSheet.create({
   heart: {
     position: "absolute",
     top: height / 2 - 100, // Center the heart vertically
-    left: width / 2 - 50,  // Center the heart horizontally
+    left: width / 2 - 50, // Center the heart horizontally
   },
 });
