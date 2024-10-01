@@ -27,8 +27,6 @@ export default (): JSX.Element => {
     if (isLoaded) {
       logWithColor("isLoaded is true", "\x1b[32m"); // Green
 
-
-
       const timer = setTimeout(async () => {
         logWithColor("Timer triggered after 3 seconds", "\x1b[36m"); // Cyan
 
@@ -40,12 +38,15 @@ export default (): JSX.Element => {
             logWithColor(`Token found: ${token}`, "\x1b[32m"); // Green
             logWithColor("Sending token for verification", "\x1b[33m"); // Yellow
 
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API}/verify-token`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`, // Send the token in the Authorization header
+            const res = await fetch(
+              `${process.env.EXPO_PUBLIC_API}/verify-token`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`, // Send the token in the Authorization header
+                },
               },
-            });
+            );
 
             if (!res.ok) {
               const errorData = await res.json();
@@ -119,7 +120,6 @@ export default (): JSX.Element => {
       }, 3000); // 3 seconds
 
       return () => {
-
         logWithColor("Timer cleared", "\x1b[33m"); // Yellow
         clearTimeout(timer);
       };

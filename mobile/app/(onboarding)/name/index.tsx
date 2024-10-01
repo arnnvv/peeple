@@ -15,7 +15,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAtom, useAtomValue } from "jotai";
 import { bioAtom, emailAtom, nameAtom } from "@/lib/atom";
 import { router } from "expo-router";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { useUser } from "@clerk/clerk-expo";
@@ -25,49 +29,58 @@ const logWithColor = (message: string, color: string = "\x1b[37m") => {
   console.log(`${color}%s\x1b[0m`, message);
 };
 
-
-
-const uploadImageToS3 = async (username: string, imageUri: string, imageNumber: number) => {
+const uploadImageToS3 = async (
+  username: string,
+  imageUri: string,
+  imageNumber: number,
+) => {
   const filename = `${username}-${imageNumber}.jpeg`;
   logWithColor(`Starting image upload for: ${filename}`, "\x1b[34m"); // Blue
 
-
-
   try {
-
-    let uploadUrl = '';
+    let uploadUrl = "";
 
     try {
-      console.log('ayush is')
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/upload-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      console.log("ayush is");
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API}/upload-image`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            filename,
+          }),
         },
-        body: JSON.stringify({
-          filename
-        })
-      });
-      console.log("comming back")
+      );
+      console.log("comming back");
       if (!response.ok) {
-        throw new Error(`Failed to upload image. Status: ${response.status} - ${response.statusText}`);
+        throw new Error(
+          `Failed to upload image. Status: ${response.status} - ${response.statusText}`,
+        );
       }
 
       const result = await response.json();
       uploadUrl = result.uploadUrl;
-      console.log('Upload URL:', uploadUrl); // This URL can be used to upload the actual file to S3
+      console.log("Upload URL:", uploadUrl); // This URL can be used to upload the actual file to S3
     } catch (error: any) {
-      console.error('Error during upload image request:', error.message);
+      console.error("Error during upload image request:", error.message);
     }
     // Fetch image as blob
     logWithColor(`Fetching image from URI: ${imageUri}`, "\x1b[34m"); // Blue
     const response = await fetch(imageUri);
     if (!response.ok) {
       logWithColor(`Failed to fetch image from URI: ${imageUri}`, "\x1b[31m"); // Red
-      throw new Error(`Image fetch failed with status: ${response.status} - ${response.statusText}`);
+      throw new Error(
+        `Image fetch failed with status: ${response.status} - ${response.statusText}`,
+      );
     }
     const blob = await response.blob();
-    logWithColor(`Fetched image as blob successfully. Size: ${blob.size} bytes`, "\x1b[32m"); // Green
+    logWithColor(
+      `Fetched image as blob successfully. Size: ${blob.size} bytes`,
+      "\x1b[32m",
+    ); // Green
 
     // Make the PUT request to upload the image using the signed URL
     logWithColor(`Uploading image using signed URL...`, "\x1b[34m"); // Blue
@@ -83,18 +96,26 @@ const uploadImageToS3 = async (username: string, imageUri: string, imageNumber: 
       logWithColor(`Image uploaded successfully: ${filename}`, "\x1b[32m"); // Green
     } else {
       const errorText = await uploadResponse.text();
-      logWithColor(`Failed to upload image: ${filename} with status: ${uploadResponse.status} - ${errorText}`, "\x1b[31m"); // Red
-      throw new Error(`Image upload failed with status: ${uploadResponse.status} - ${errorText}`);
+      logWithColor(
+        `Failed to upload image: ${filename} with status: ${uploadResponse.status} - ${errorText}`,
+        "\x1b[31m",
+      ); // Red
+      throw new Error(
+        `Image upload failed with status: ${uploadResponse.status} - ${errorText}`,
+      );
     }
     // GET
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/generate-url`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API}/generate-url`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ filename }),
         },
-        body: JSON.stringify({ filename }),
-      });
+      );
 
       // Check if the request was successful
       if (!response.ok) {
@@ -105,23 +126,20 @@ const uploadImageToS3 = async (username: string, imageUri: string, imageNumber: 
       const data = await response.json();
       console.log(`Generated Signed URL: ${data.url}`);
       return data;
-
     } catch (error: any) {
       console.error(`Error fetching signed URL: ${error.message}`);
       throw error;
     }
-
   } catch (e: any) {
     logWithColor(`Error during upload process: ${e.message}`, "\x1b[31m"); // Red
     // Include contextual information
-    logWithColor(`Error context - Username: ${username}, Image URI: ${imageUri}, Image Number: ${imageNumber}`, "\x1b[31m"); // Red
+    logWithColor(
+      `Error context - Username: ${username}, Image URI: ${imageUri}, Image Number: ${imageNumber}`,
+      "\x1b[31m",
+    ); // Red
     throw e; // Rethrow the error for further handling if needed
-
-  };
+  }
 };
-
-
-
 
 export default (): JSX.Element => {
   const [name, setName] = useAtom<string>(nameAtom);
@@ -129,12 +147,10 @@ export default (): JSX.Element => {
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-
   // Validation states
   const [nameError, setNameError] = useState<string | null>(null);
   const [bioError, setBioError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
-
 
   const email = useAtomValue(emailAtom);
   const handleImageUpload = async () => {
@@ -197,14 +213,21 @@ export default (): JSX.Element => {
 
   const handleSubmit = async () => {
     if (validateFields()) {
-      setLoading(true);  // Start loading
-      logWithColor("Validation passed. Proceeding with submission.", "\x1b[32m"); // Green
+      setLoading(true); // Start loading
+      logWithColor(
+        "Validation passed. Proceeding with submission.",
+        "\x1b[32m",
+      ); // Green
 
       try {
         for (let i = 0; i < images.length; i++) {
-          const { url, filename } = await uploadImageToS3(email, images[i], i + 1);
-          console.log('URL:', url);
-          console.log('Filename:', filename);
+          const { url, filename } = await uploadImageToS3(
+            email,
+            images[i],
+            i + 1,
+          );
+          console.log("URL:", url);
+          console.log("Filename:", filename);
 
           await fetch(`${process.env.EXPO_PUBLIC_API}/profile-images`, {
             method: "POST",
@@ -218,20 +241,16 @@ export default (): JSX.Element => {
           });
         }
 
-        router.replace("/(onboarding)/gender");  // Redirect after upload
-
+        router.replace("/(onboarding)/gender"); // Redirect after upload
       } catch (error: any) {
         logWithColor(`Error during submission: ${error.message}`, "\x1b[31m"); // Red
       } finally {
-        setLoading(false);  // Stop loading after everything completes
+        setLoading(false); // Stop loading after everything completes
       }
     } else {
       logWithColor("Validation failed. Not submitting.", "\x1b[31m"); // Red
     }
   };
-
-
-
 
   return (
     <View style={{ flex: 1 }}>
@@ -260,19 +279,24 @@ export default (): JSX.Element => {
 
         {/* Image Upload Section */}
         <View style={styles.imagesContainer}>
-          {images.map((image: string, index: number): JSX.Element => (
-            <View key={index} style={styles.imageWrapper}>
-              <Image source={{ uri: image }} style={styles.uploadedImage} />
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDeleteImage(index)}
-              >
-                <Text style={styles.deleteText}>X</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+          {images.map(
+            (image: string, index: number): JSX.Element => (
+              <View key={index} style={styles.imageWrapper}>
+                <Image source={{ uri: image }} style={styles.uploadedImage} />
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteImage(index)}
+                >
+                  <Text style={styles.deleteText}>X</Text>
+                </TouchableOpacity>
+              </View>
+            ),
+          )}
           {images.length < 4 && (
-            <TouchableOpacity style={styles.imageUpload} onPress={handleImageUpload}>
+            <TouchableOpacity
+              style={styles.imageUpload}
+              onPress={handleImageUpload}
+            >
               <Text style={styles.uploadText}>Upload Image</Text>
             </TouchableOpacity>
           )}
@@ -303,7 +327,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-
 
   title: {
     fontSize: 24,

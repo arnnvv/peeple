@@ -66,13 +66,17 @@ export default (): JSX.Element => {
       } else {
         const email = user?.emailAddresses[0].emailAddress;
         console.log(email, "says ih");
-        const res = await fetch(`${process.env.EXPO_PUBLIC_API}user-form-email`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const res = await fetch(
+          `${process.env.EXPO_PUBLIC_API}/user-form-email`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email }),
           },
-          body: JSON.stringify({ email }),
-        });
+        );
+        console.log("AFTER FETCH AYUSH");
         if (res.ok) {
           console.log("Res is ok in Android");
           const data = await res.json();
