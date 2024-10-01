@@ -488,6 +488,45 @@ app.post("/get-recommendations", async (req: Request, res: Response) => {
   }
 });
 
+app.post('checkPlan', async (req: Request, res: Response) => {
+  console.log("bhaiya req ja rhi hai ")
+  const { email } = req.body;
+  try {
+    const user = await db.select().from(users).where(eq(users.email, email));
+    if (user[0].subscription === "basic") {
+      res.json({ hasBasicPlan: true });
+    } else {
+      res.json({ hasBasicPlan: false });
+    }
+  } catch (e) {
+    throw new Error(`${e}`);
+  }
+});
+
+app.post('updateUserPlan', async (req: Request, res: Response) => {
+  const { email, plan } = req.body;
+
+  const togglePlan = (currentPlan: string) => {
+    return currentPlan === 'basic' ? 'premium' : 'basic';
+  };
+
+  try {
+    const newPlan = togglePlan(plan); // Toggle the plan
+    await db
+      .update(users)
+      .set({
+        subscription: newPlan,
+      })
+      .where(eq(users.email, email));
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+
+});
+
 app.listen(port, () => {
   logWithColor(`Server listening on port ${port}`, "\x1b[32m"); // Green
 });
+
+

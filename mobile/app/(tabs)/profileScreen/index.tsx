@@ -21,6 +21,7 @@ import { getCityFromCoordinates } from "@/lib/cutyName";
 import { useUser } from "@clerk/clerk-expo";
 import { getEmail } from "@/lib/getEmail";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 export default (): JSX.Element => {
   const [editing, setEditing] = useState(false);
@@ -122,7 +123,6 @@ export default (): JSX.Element => {
         <TouchableOpacity>
           <ChevronLeft style={styles.icon} />
         </TouchableOpacity>
-        <Text style={styles.title}>Profile</Text>
         <TouchableOpacity onPress={handleLogout}>
           <Settings style={styles.icon} />
         </TouchableOpacity>
@@ -132,46 +132,34 @@ export default (): JSX.Element => {
           {userr?.name}, {Number(new Date().getFullYear()) - (userr?.year || 0)}
         </Text>
         <Text style={styles.location}>{cityName}</Text>
-        {/*
-        <View style={styles.actions}>
-          <TouchableOpacity
-            onPress={() => setEditing(!editing)}
-            style={styles.editButton}
-          >
-            <Edit2 style={styles.editIcon} />
-            <Text style={styles.editText}>
-              {editing ? "Save" : "Edit Profile"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        */}
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.photoGallery}
-      >
-        {photos.map(
-          (photo: string, index: number): JSX.Element => (
-            <View key={index} style={styles.photoContainer}>
-              <Image source={{ uri: photo }} style={styles.photo} />
-              {editing && (
-                <TouchableOpacity
-                  style={styles.cameraButton}
-                  onPress={() => openGallery(index)}
-                >
-                  <Camera style={styles.cameraIcon} />
-                </TouchableOpacity>
-              )}
-            </View>
-          ),
-        )}
-      </ScrollView>
+      <View style={styles.photoGalleryContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.photoGalleryContent}
+        >
+          {photos.map(
+            (photo: string, index: number): JSX.Element => (
+              <View key={index} style={styles.photoContainer}>
+                <Image source={{ uri: photo }} style={styles.photo} />
+                {editing && (
+                  <TouchableOpacity
+                    style={styles.cameraButton}
+                    onPress={() => openGallery(index)}
+                  >
+                    <Camera style={styles.cameraIcon} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ),
+          )}
+        </ScrollView>
+      </View>
       <View style={styles.aboutSection}>
         <Text style={styles.aboutTitle}>About Me</Text>
         {editing ? (
           <TextInput
-            //@ts-expect-error: W T F
             defaultValue={user?.bio}
             multiline
             style={styles.textArea}
@@ -179,6 +167,19 @@ export default (): JSX.Element => {
         ) : (
           <Text style={styles.bio}>{userr?.bio}</Text>
         )}
+      </View>
+      <View style={styles.upgradeSection}>
+        <Text style={styles.upgradeTitle}>Upgrade Your Experience</Text>
+        <Text style={styles.upgradeText}>
+          Get more matches and premium features!
+        </Text>
+        <TouchableOpacity
+          style={styles.upgradeButton}
+          onPress={() => router.replace('../../subscription')}
+        >
+          <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+        </TouchableOpacity>
+
       </View>
       <View style={styles.quickInfoSection}>
         <Text style={styles.quickInfoTitle}>Quick Info</Text>
@@ -194,43 +195,25 @@ export default (): JSX.Element => {
               label: "Looking for",
               value: userr?.relationshiptype,
             },
-          ].map(
-            ({
-              icon,
-              label,
-              value,
-            }: {
-              icon: string;
-              label: string;
-              value: string | null | undefined;
-            }): JSX.Element => (
-              <View key={label} style={styles.quickInfoItem}>
-                <Text style={styles.quickInfoIcon}>{icon}</Text>
-                <View style={styles.quickInfoTextContainer}>
-                  <Text style={styles.quickInfoLabel}>{label}</Text>
-                  <Text style={styles.quickInfoValue}>{value}</Text>
-                </View>
-                {editing && (
-                  <TouchableOpacity>
-                    <Edit2 style={styles.editCardIcon} />
-                  </TouchableOpacity>
-                )}
+          ].map(({ icon, label, value }): JSX.Element => (
+            <View key={label} style={styles.quickInfoItem}>
+              <Text style={styles.quickInfoIcon}>{icon}</Text>
+              <View style={styles.quickInfoTextContainer}>
+                <Text style={styles.quickInfoLabel}>{label}</Text>
+                <Text style={styles.quickInfoValue}>{value}</Text>
               </View>
-            ),
-          )}
+              {editing && (
+                <TouchableOpacity>
+                  <Edit2 style={styles.editCardIcon} />
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
         </View>
-      </View>
-      <View style={styles.upgradeSection}>
-        <Text style={styles.upgradeTitle}>Upgrade Your Experience</Text>
-        <Text style={styles.upgradeText}>
-          Get more matches and premium features!
-        </Text>
-        <TouchableOpacity style={styles.upgradeButton}>
-          <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );
+
 };
 
 const styles = StyleSheet.create({
@@ -294,10 +277,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginTop: 16,
   },
+  photoGalleryContainer: {
+    alignItems: "center", // Center the content
+  },
+  photoGalleryContent: {
+    justifyContent: "center", // Center the items within the ScrollView
+    paddingHorizontal: 16, // Optional: Add padding for aesthetics
+  },
   photoContainer: {
     position: "relative",
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     borderRadius: 8,
     overflow: "hidden",
     backgroundColor: "#E2E8F0",
