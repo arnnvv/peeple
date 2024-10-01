@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,8 +12,13 @@ import { useAtomValue } from "jotai";
 import { emailAtom } from "@/lib/atom";
 import Swiper from "react-native-deck-swiper";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  FadeIn,
+  FadeOut,
+} from "react-native-reanimated"; // For animations
 
 const { width, height } = Dimensions.get("window");
 
@@ -22,56 +27,12 @@ export default (): JSX.Element => {
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [allProfilesSwiped, setAllProfilesSwiped] = useState(false);
+  const heartOpacity = useSharedValue(0); // To control the heart's visibility
 
-  const getLikedBy = async () => {
-    try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API}/liked-by`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }), // Sending the email in the request body
-      });
-
-      // Check if the response is ok (status in the range 200-299)
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
-
-      const data = await response.json(); // Parse the response as JSON
-      console.log("\x1b[32m[Success] Users who liked:", data.likedByUsers);
-      return data.likedByUsers; // Return the list of users who liked
-    } catch (error) {
-      console.error("\x1b[31m[Error] Failed to fetch liked by users:", error);
-    }
-  };
-
-  const getMutualLikes = async () => {
-    try {
-      const response = await fetch("http://your-api-url/mutual-likes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      // Check if the response is OK (status code 200-299)
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch mutual likes");
-      }
-
-      const data = await response.json();
-      console.log("Mutual Likes:", data.mutualLikes); // Log the mutual likes data
-      return data.mutualLikes; // Return the mutual likes data
-    } catch (error) {
-      console.error("Error fetching mutual likes:", error);
-      throw error; // Re-throw the error for further handling if needed
-    }
-  };
   useEffect(() => {
     const fetchRecommendations = async () => {
-      console.log("[Fetching] Requesting recommendations for:", email);
+      console.log("\x1b[34m[Fetching] Requesting recommendations for:", email);
       try {
         const res = await fetch(
           `${process.env.EXPO_PUBLIC_API}/get-recommendations`,
@@ -85,13 +46,18 @@ export default (): JSX.Element => {
         );
 
         if (!res.ok) {
-          console.log(`HTTP error! status: ${res.status}`);
+          console.log(`\x1b[31m[Error] HTTP error! status: ${res.status}`);
           throw new Error(`HTTP error! status: ${res.status}`);
         }
 
         const data = await res.json();
         setRecommendations(data.recommendations);
+        console.log(
+          `\x1b[36m[Debug] Recommendations fetched:`,
+          data.recommendations,
+        );
       } catch (error: any) {
+        console.log(`\x1b[31m[Error] Fetch failed:`, error);
         setError(error.message);
       } finally {
         setLoading(false);
@@ -101,10 +67,26 @@ export default (): JSX.Element => {
     fetchRecommendations();
   }, [email]);
 
+  // Trigger heart animation on right swipe
+  const handleSwipeRight = () => {
+    heartOpacity.value = 1; // Show heart
+    heartOpacity.value = withTiming(0, { duration: 500 }); // Fade out heart after 500ms
+  };
+
+  // Animated heart style
+  const heartStyle = useAnimatedStyle(() => {
+    return {
+      opacity: heartOpacity.value,
+      transform: [{ scale: withTiming(heartOpacity.value === 1 ? 1.5 : 1) }],
+    };
+  });
+
   const renderCard = (card: any) => {
     if (!card) return null;
 
+    // Use real place text instead of coordinates, if available
     const parsedLocation = JSON.parse(card.location || "{}").coords || {};
+    const locationText = "Unknown location"; // Placeholder for real location text
 
     return (
       <Animated.View
@@ -112,112 +94,110 @@ export default (): JSX.Element => {
         exiting={FadeOut.duration(500)}
         style={styles.card}
       >
-        {/* Full image background */}
         <Image source={{ uri: card.photo }} style={styles.image} />
-
-        {/* Overlay for texts */}
-        <View style={styles.overlayContainer}>
-          <ScrollView contentContainerStyle={styles.textContent}>
-            <Text style={styles.name}>
-              {card.name}, {new Date().getFullYear() - card.year}
-            </Text>
-
-            <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={16} color="#F87171" />
-              <Text style={styles.infoText}>
-                {parsedLocation.latitude?.toFixed(2)},{" "}
-                {parsedLocation.longitude?.toFixed(2)}
-              </Text>
-            </View>
-
+        <ScrollView contentContainerStyle={styles.cardContent}>
+          <Text style={styles.name}>
+            {card.name}, {new Date().getFullYear() - card.year}
+          </Text>
+          {card.occupationField && (
             <View style={styles.infoRow}>
               <Ionicons name="briefcase-outline" size={16} color="#34D399" />
               <Text style={styles.infoText}>
                 {card.occupationField} - {card.occupationArea}
               </Text>
             </View>
-
-            <View style={styles.infoRow}>
-              <Ionicons name="heart-outline" size={16} color="#F472B6" />
-              <Text style={styles.infoText}>
-                Relationship: {card.relationshiptype || "N/A"}
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Ionicons name="beer-outline" size={16} color="#FBBF24" />
-              <Text style={styles.infoText}>Drinks: {card.drink || "N/A"}</Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Ionicons name="logo-no-smoking" size={16} color="#60A5FA" />
-              <Text style={styles.infoText}>Smokes: {card.smoke || "N/A"}</Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Ionicons name="calendar-outline" size={16} color="#A78BFA" />
-              <Text style={styles.infoText}>
-                {card.month}/{card.date}/{card.year}
-              </Text>
-            </View>
-
-            <Text style={styles.bio}>{card.bio}</Text>
-          </ScrollView>
-        </View>
+          )}
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={16} color="#F87171" />
+            <Text style={styles.infoText}>
+              {locationText} {/* Display geocoded location here */}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="heart-outline" size={16} color="#F472B6" />
+            <Text style={styles.infoText}>
+              Relationship: {card.relationshiptype || "N/A"}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="beer-outline" size={16} color="#FBBF24" />
+            <Text style={styles.infoText}>Drinks: {card.drink || "N/A"}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="logo-no-smoking" size={16} color="#60A5FA" />
+            <Text style={styles.infoText}>Smokes: {card.smoke || "N/A"}</Text>
+          </View>
+          <Text style={styles.bio} numberOfLines={4} ellipsizeMode="tail">
+            {card.bio}
+          </Text>
+        </ScrollView>
       </Animated.View>
+    );
+  };
+
+  const renderNoMoreCards = () => {
+    return (
+      <View style={styles.noMoreCardsContainer}>
+        <Text style={styles.noMoreCardsText}>🎉 All profiles are swiped! 🎉</Text>
+        <Text style={styles.noMoreCardsSubText}>Come back later for more recommendations.</Text>
+        <Ionicons name="happy-outline" size={50} color="#8B5CF6" />
+      </View>
     );
   };
 
   if (loading) {
     return (
-      <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={styles.gradient}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#FFFFFF" />
-        </View>
-      </LinearGradient>
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#8B5CF6" />
+      </View>
     );
   }
 
   if (error) {
     return (
-      <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={styles.gradient}>
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>Error: {error}</Text>
-        </View>
-      </LinearGradient>
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+      </View>
     );
   }
 
   return (
-    <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={styles.gradient}>
-      <View style={styles.container}>
-        <Swiper
-          cards={recommendations}
-          renderCard={renderCard}
-          onSwiped={(cardIndex: number) => console.log(cardIndex)}
-          onSwipedAll={() => console.log("onSwipedAll")}
-          cardIndex={0}
-          backgroundColor={"transparent"}
-          stackSize={3}
-          verticalSwipe={false}
-        />
-      </View>
-    </LinearGradient>
+    <View style={styles.container}>
+      <Swiper
+        cards={recommendations}
+        renderCard={renderCard}
+        onSwipedRight={handleSwipeRight} // Handle swipe right
+        onSwiped={(cardIndex: number) => console.log(cardIndex)}
+        onSwipedAll={() => {
+          console.log("onSwipedAll");
+          setAllProfilesSwiped(true);
+        }}
+        cardIndex={0}
+        backgroundColor={"#F3E8FF"}
+        stackSize={3}
+        verticalSwipe={false}
+        showSecondCard={true}
+      />
+      {allProfilesSwiped && renderNoMoreCards()}
+
+      {/* Animated heart */}
+      <Animated.View style={[styles.heart, heartStyle]}>
+        <Ionicons name="heart" size={100} color="#F472B6" />
+      </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#8B5CF6", // Purple background
     justifyContent: "center",
     alignItems: "center",
   },
-  gradient: {
-    flex: 1,
-  },
   card: {
-    width: width * 0.95, // Make the card larger
-    height: height * 0.85, // Increase card height
+    width: width * 0.9,
+    height: height * 0.87,
     borderRadius: 20,
     backgroundColor: "white",
     shadowColor: "#000",
@@ -229,29 +209,24 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     overflow: "hidden",
+    borderColor: "#8B5CF6", // Purple border
+    borderWidth: 1,
   },
   image: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
     width: "100%",
-    height: "100%",
-    resizeMode: "cover", // Ensure the image covers the whole card
+    height: "65%", // Increased from 50% to 55%
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
-  overlayContainer: {
-    flex: 1,
-    justifyContent: "flex-end", // Align the text overlay to the bottom
-    backgroundColor: "rgba(0, 0, 0, 0.1)", // Black overlay
-  },
-  textContent: {
+  cardContent: {
+    flexGrow: 1,
     padding: 20,
+    backgroundColor: "white", // White background inside card
   },
   name: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#fff", // White text over the black overlay
+    color: "#4B5563", // Dark gray text
     marginBottom: 10,
   },
   infoRow: {
@@ -262,12 +237,13 @@ const styles = StyleSheet.create({
   infoText: {
     marginLeft: 10,
     fontSize: 16,
-    color: "#fff", // White text
+    color: "#6B7280", // Medium gray text
   },
   bio: {
     fontSize: 16,
     marginTop: 10,
-    color: "#fff", // White text
+    color: "#4B5563",
+    flexShrink: 1,
   },
   centered: {
     flex: 1,
@@ -275,7 +251,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   errorText: {
-    color: "#F87171",
-    fontSize: 18,
+    color: "#F87171", // Red error text
+  },
+  noMoreCardsContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  noMoreCardsText: {
+    fontSize: 20,
+    color: "#374151", // Gray
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  noMoreCardsSubText: {
+    fontSize: 16,
+    color: "#6B7280", // Lighter gray
+    textAlign: "center",
+  },
+  heart: {
+    position: "absolute",
+    top: height / 2 - 100, // Center the heart vertically
+    left: width / 2 - 50,  // Center the heart horizontally
   },
 });
