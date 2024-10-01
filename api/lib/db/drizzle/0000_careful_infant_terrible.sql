@@ -26,6 +26,14 @@ CREATE TABLE IF NOT EXISTS "peeple_api_pictures" (
 	"url" varchar NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "peeple_api_profileimages" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"email" varchar NOT NULL,
+	"url" varchar(255) NOT NULL,
+	"name" varchar(255) NOT NULL,
+	"imageNo" integer NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "peeple_api_userpreferences" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"userid" varchar NOT NULL,
@@ -96,6 +104,12 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "peeple_api_pictures" ADD CONSTRAINT "peeple_api_pictures_email_peeple_api_users_email_fk" FOREIGN KEY ("email") REFERENCES "public"."peeple_api_users"("email") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "peeple_api_profileimages" ADD CONSTRAINT "peeple_api_profileimages_email_peeple_api_users_email_fk" FOREIGN KEY ("email") REFERENCES "public"."peeple_api_users"("email") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
