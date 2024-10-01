@@ -2,8 +2,12 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Zap, Crown, Check } from "lucide-react-native";
+import { useAtomValue } from "jotai";
+import { emailAtom } from "@/lib/atom";
+import { router } from "expo-router";
 
 interface PlanCardProps {
+  email: string;
   title: string;
   price: string;
   features: string[];
@@ -12,25 +16,30 @@ interface PlanCardProps {
 }
 
 const SubscriptionScreen: React.FC = () => {
+
+  const email = useAtomValue(emailAtom);
+  console.log(email);
   return (
     <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={styles.container}>
       <Text style={styles.title}>Choose Your Love Journey!</Text>
 
       <View style={styles.plansContainer}>
         <PlanCard
+          email={email}
           title="Basic Bliss"
-          price="$9.99/month"
-          features={["50 daily love swipes", "See your admirers"]}
+          price="₹39/month"
+          features={["50 daily like swipes", "See who liked you"]}
           icon={<Zap color="#8B5CF6" size={25} />}
         />
 
         <PlanCard
+          email={email}
           title="Premium Passion"
-          price="$19.99/month"
+          price="₹79/month"
           features={[
-            "Unlimited love swipes",
-            "See your admirers",
-            "VIP spotlight in matches",
+            "Unlimited like swipes",
+            "See who liked you",
+            "10x more visibility in feed",
           ]}
           icon={<Crown color="#8B5CF6" size={25} />}
           isPremium={true}
@@ -47,27 +56,43 @@ const SubscriptionScreen: React.FC = () => {
 };
 
 const PlanCard: React.FC<PlanCardProps> = ({
+  email,
   title,
   price,
   features,
   icon,
   isPremium = false,
-}) => (
-  <TouchableOpacity style={[styles.planCard, isPremium && styles.premiumCard]}>
-    <View style={styles.planIconContainer}>{icon}</View>
-    <Text style={styles.planTitle}>{title}</Text>
-    <Text style={styles.planPrice}>{price}</Text>
-    {features.map((feature, index) => (
-      <View key={index} style={styles.featureRow}>
-        <Check color="#8B5CF6" size={18} />
-        <Text style={styles.featureText}>{feature}</Text>
-      </View>
-    ))}
-    <TouchableOpacity style={styles.subscribeButton}>
-      <Text style={styles.subscribeButtonText}>Choose Plan</Text>
+}) => {
+  // Define the onClick handler based on isPremium
+  const handleSubscribe = () => {
+    if (isPremium) {
+      // Link for premium plan
+      console.log('Redirecting to premium subscription page');
+      router.replace(`http://10.61.62.21:3001/payment/${email}-premium`);
+    } else {
+      // Link for regular plan
+      console.log('Redirecting to regular subscription page');
+      router.replace(`http://10.61.62.21:3001/payment/${email}-basic`);
+    }
+  };
+
+  return (
+    <TouchableOpacity style={[styles.planCard, isPremium && styles.premiumCard]}>
+      <View style={styles.planIconContainer}>{icon}</View>
+      <Text style={styles.planTitle}>{title}</Text>
+      <Text style={styles.planPrice}>{price}</Text>
+      {features.map((feature, index) => (
+        <View key={index} style={styles.featureRow}>
+          <Check color="#8B5CF6" size={18} />
+          <Text style={styles.featureText}>{feature}</Text>
+        </View>
+      ))}
+      <TouchableOpacity style={styles.subscribeButton} onPress={handleSubscribe}>
+        <Text style={styles.subscribeButtonText}>Buy Now</Text>
+      </TouchableOpacity>
     </TouchableOpacity>
-  </TouchableOpacity>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
