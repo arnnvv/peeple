@@ -8,25 +8,25 @@ importers:
   .:
     dependencies:
       "@aws-sdk/client-s3":
-        specifier: ^3.658.1
+        specifier: ^3.663.0
         version: 3.663.0
       "@aws-sdk/s3-request-presigner":
-        specifier: ^3.658.1
+        specifier: ^3.663.0
         version: 3.663.0
       "@babel/runtime":
-        specifier: ^7.25.6
+        specifier: ^7.25.7
         version: 7.25.7
       "@clerk/clerk-expo":
-        specifier: ^2.2.17
+        specifier: ^2.2.20
         version: 2.2.20(@types/react@18.2.79)(expo-auth-session@5.5.2(expo@51.0.36(@babel/core@7.25.7)(@babel/preset-env@7.25.7(@babel/core@7.25.7))(encoding@0.1.13)))(expo-secure-store@13.0.2(expo@51.0.36(@babel/core@7.25.7)(@babel/preset-env@7.25.7(@babel/core@7.25.7))(encoding@0.1.13)))(expo-web-browser@13.0.3(expo@51.0.36(@babel/core@7.25.7)(@babel/preset-env@7.25.7(@babel/core@7.25.7))(encoding@0.1.13)))(react-dom@18.2.0(react@18.2.0))(react-native@0.74.5(@babel/core@7.25.7)(@babel/preset-env@7.25.7(@babel/core@7.25.7))(@types/react@18.2.79)(encoding@0.1.13)(react@18.2.0))(react@18.2.0)
       "@expo-google-fonts/pacifico":
         specifier: ^0.2.3
         version: 0.2.3
       "@expo/vector-icons":
-        specifier: ^14.0.3
+        specifier: ^14.0.4
         version: 14.0.4
       "@react-native-async-storage/async-storage":
-        specifier: ^1.23.1
+        specifier: ^1.24.0
         version: 1.24.0(react-native@0.74.5(@babel/core@7.25.7)(@babel/preset-env@7.25.7(@babel/core@7.25.7))(@types/react@18.2.79)(encoding@0.1.13)(react@18.2.0))
       "@react-native-community/slider":
         specifier: 4.5.2
@@ -47,7 +47,7 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       expo:
-        specifier: ~51.0.35
+        specifier: ~51.0.36
         version: 51.0.36(@babel/core@7.25.7)(@babel/preset-env@7.25.7(@babel/core@7.25.7))(encoding@0.1.13)
       expo-asset:
         specifier: ^10.0.10
@@ -162,10 +162,10 @@ importers:
         version: 3.23.8
     devDependencies:
       "@babel/core":
-        specifier: ^7.25.2
+        specifier: ^7.25.7
         version: 7.25.7
       "@types/jest":
-        specifier: ^29.5.12
+        specifier: ^29.5.13
         version: 29.5.13
       "@types/node":
         specifier: ^22.7.4
@@ -177,7 +177,7 @@ importers:
         specifier: ^0.73.0
         version: 0.73.0(@babel/core@7.25.7)(@babel/preset-env@7.25.7(@babel/core@7.25.7))(@types/react@18.2.79)(encoding@0.1.13)(react@18.2.0)
       "@types/react-test-renderer":
-        specifier: ^18.0.7
+        specifier: ^18.3.0
         version: 18.3.0
       "@types/uuid":
         specifier: ^10.0.0
